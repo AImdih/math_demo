@@ -1,0 +1,3342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrices in Video Games — Interactive Field Guide</title>
+<meta name="description" content="Eight interactive canvas demos showing how matrices power transforms, cameras, projection, shear, and skeletons in video games.">
+<meta name="theme-color" content="#070b14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070b14'/%3E%3Cg fill='none' stroke='%2322d3ee' stroke-width='1.6'%3E%3Crect x='7' y='7' width='18' height='18' rx='2'/%3E%3Cpath d='M13 7v18M19 7v18M7 13h18M7 19h18'/%3E%3C/g%3E%3Ccircle cx='19' cy='19' r='2.2' fill='%23f472b6'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#070b14;
+    --bg-2:#0a1120;
+    --panel:#0c1526;
+    --line:rgba(148,163,184,.14);
+    --line-soft:rgba(148,163,184,.08);
+    --text:#e7eef8;
+    --muted:#93a4bc;
+    --dim:#7d8ca5;
+    --cyan:#22d3ee;
+    --magenta:#f472b6;
+    --lime:#a3e635;
+    --amber:#fbbf24;
+    --red:#fb7185;
+    --violet:#a78bfa;
+    --mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --radius:18px;
+    --maxw:1180px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:84px}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      radial-gradient(900px 520px at 12% -8%,rgba(34,211,238,.10),transparent 62%),
+      radial-gradient(820px 520px at 92% -2%,rgba(244,114,182,.08),transparent 58%),
+      var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);
+    background-size:48px 48px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 18%,transparent 76%);
+    mask-image:radial-gradient(ellipse at 50% 0%,#000 18%,transparent 76%);
+  }
+  ::selection{background:rgba(34,211,238,.28);color:#fff}
+
+  a{color:inherit}
+  code{font-family:var(--mono)}
+  .skip{
+    position:absolute;left:-9999px;top:12px;z-index:100;
+    padding:10px 14px;border-radius:8px;background:var(--cyan);color:#04121a;
+    font:700 11px var(--mono);text-decoration:none;
+  }
+  .skip:focus{left:16px}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px clamp(16px,4vw,40px);
+    border-bottom:1px solid var(--line-soft);
+    background:rgba(7,11,20,.74);
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font:700 12px var(--mono);letter-spacing:.2em;text-decoration:none;white-space:nowrap;
+  }
+  .brand .slash{color:var(--magenta)}
+  .brand-mark{
+    width:17px;height:17px;border:1px solid var(--cyan);border-radius:3px;
+    position:relative;box-shadow:0 0 14px rgba(34,211,238,.45);flex:none;
+  }
+  .brand-mark::before,.brand-mark::after{
+    content:"";position:absolute;background:rgba(34,211,238,.55);
+  }
+  .brand-mark::before{left:5px;top:2px;bottom:2px;width:1px;box-shadow:4px 0 0 rgba(34,211,238,.55),8px 0 0 rgba(34,211,238,.55)}
+  .brand-mark::after{top:5px;left:2px;right:2px;height:1px;box-shadow:0 4px 0 rgba(34,211,238,.55),0 8px 0 rgba(34,211,238,.55)}
+  .topbar-right{display:flex;align-items:center;gap:18px}
+  .nav-stat{
+    font:500 9px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;gap:6px;
+  }
+  .nav-stat b{color:var(--text);font-size:11px;font-weight:700}
+  .pause-btn{
+    font:700 9px var(--mono);letter-spacing:.13em;text-transform:uppercase;
+    color:var(--lime);background:rgba(163,230,53,.06);
+    border:1px solid rgba(163,230,53,.3);border-radius:8px;
+    padding:8px 11px;cursor:pointer;transition:background .2s,color .2s,border-color .2s;
+    white-space:nowrap;
+  }
+  .pause-btn:hover{background:rgba(163,230,53,.13)}
+  .pause-btn[aria-pressed="true"]{
+    color:var(--amber);border-color:rgba(251,191,36,.38);background:rgba(251,191,36,.08);
+  }
+  .mini-btn{
+    font:700 9px var(--mono);letter-spacing:.1em;text-transform:uppercase;
+    color:var(--amber);background:rgba(251,191,36,.07);
+    border:1px solid rgba(251,191,36,.32);border-radius:8px;
+    padding:8px 11px;cursor:pointer;white-space:nowrap;
+    transition:background .2s,border-color .2s,transform .2s;
+  }
+  .mini-btn:hover{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.55);transform:translateY(-1px)}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;isolation:isolate;overflow:hidden;
+    min-height:clamp(560px,74vh,760px);
+    display:flex;align-items:center;
+    padding:clamp(64px,9vw,110px) clamp(16px,4vw,40px) clamp(56px,7vw,84px);
+  }
+  #hero-canvas{
+    position:absolute;inset:0;width:100%;height:100%;
+    z-index:-1;opacity:.9;display:block;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(620px 340px at 18% 34%,rgba(34,211,238,.09),transparent 65%),
+      radial-gradient(520px 340px at 78% 18%,rgba(244,114,182,.09),transparent 62%);
+  }
+  .hero-inner{width:100%;max-width:var(--maxw);margin:0 auto}
+  .eyebrow{
+    margin:0 0 18px;
+    font:700 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{
+    content:"";width:22px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent);
+  }
+  h1{
+    margin:0;max-width:780px;
+    font-size:clamp(2.55rem,6.2vw,4.9rem);
+    line-height:.94;letter-spacing:-.045em;font-weight:800;
+  }
+  h1 .grad{
+    background:linear-gradient(100deg,var(--cyan) 0%,#7dd3fc 34%,var(--magenta) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lede{
+    max-width:580px;margin:26px 0 0;
+    font-size:clamp(1rem,1.3vw,1.1rem);line-height:1.72;color:#a8b7cb;
+  }
+  .lede strong{color:var(--text);font-weight:600}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:32px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:12px 17px;border-radius:10px;text-decoration:none;
+    font:700 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid transparent;transition:transform .2s,box-shadow .2s,background .2s,border-color .2s;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{
+    color:#04121a;background:var(--cyan);
+    box-shadow:0 0 30px rgba(34,211,238,.28);
+  }
+  .btn-primary:hover{box-shadow:0 6px 34px rgba(34,211,238,.4)}
+  .btn-primary span{font-size:13px;line-height:1}
+  .btn-ghost{
+    color:var(--text);border-color:rgba(148,163,184,.24);background:rgba(148,163,184,.045);
+  }
+  .btn-ghost:hover{background:rgba(148,163,184,.1);border-color:rgba(148,163,184,.4)}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:0;margin-top:48px}
+  .hero-stats div{
+    padding:0 26px;border-left:1px solid var(--line);
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .hero-stats div:first-child{padding-left:0;border-left:0}
+  .hero-stats span{font:700 20px var(--mono);letter-spacing:-.02em}
+  .hero-stats small{font:600 8px var(--mono);letter-spacing:.17em;text-transform:uppercase;color:var(--dim)}
+
+  /* ---------- shared section ---------- */
+  .cases,.cheatsheet{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+  .cases{padding-top:clamp(64px,8vw,100px);padding-bottom:clamp(56px,7vw,80px)}
+  .cheatsheet{padding-top:clamp(56px,7vw,84px);padding-bottom:clamp(56px,7vw,84px)}
+  .section-head{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:32px;
+    margin-bottom:34px;
+  }
+  .section-head h2{
+    margin:0;max-width:680px;
+    font-size:clamp(1.55rem,3.2vw,2.35rem);line-height:1.08;letter-spacing:-.035em;font-weight:750;
+  }
+  .section-note{max-width:330px;margin:0 0 3px;font-size:12.5px;line-height:1.65;color:var(--dim)}
+
+  /* ---------- cards ---------- */
+  .case-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .case{
+    position:relative;display:flex;flex-direction:column;
+    padding:22px;border-radius:var(--radius);
+    border:1px solid var(--line);
+    background:linear-gradient(165deg,rgba(15,25,44,.94),rgba(8,13,24,.97));
+    box-shadow:0 24px 60px -46px rgba(0,0,0,.95);
+    overflow:hidden;
+    transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;
+  }
+  .case::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    opacity:.7;pointer-events:none;
+  }
+  .case::after{
+    content:"";position:absolute;right:-120px;top:-150px;width:280px;height:280px;
+    background:radial-gradient(circle,var(--accent),transparent 68%);
+    opacity:.065;pointer-events:none;
+  }
+  .case:hover{
+    transform:translateY(-3px);
+    border-color:rgba(148,163,184,.28);
+    box-shadow:0 30px 70px -44px rgba(0,0,0,1),0 0 40px -22px var(--accent);
+  }
+  .case.feature{grid-column:1 / -1}
+  .case-top{position:relative;display:flex;align-items:center;min-height:18px}
+  .case-tag{
+    display:inline-flex;align-items:center;gap:7px;
+    font:700 9px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+  }
+  .case-tag i{
+    width:5px;height:5px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px var(--accent);flex:none;
+  }
+  .case-num{
+    position:absolute;right:0;top:-10px;
+    font:700 52px/1 var(--mono);letter-spacing:-.06em;
+    color:rgba(148,163,184,.075);pointer-events:none;user-select:none;
+  }
+  .case h3{
+    position:relative;margin:12px 0 8px;max-width:92%;
+    font-size:clamp(1.02rem,1.35vw,1.16rem);line-height:1.28;letter-spacing:-.015em;font-weight:700;
+  }
+  .case-copy{
+    position:relative;margin:0;max-width:62ch;
+    font-size:13px;line-height:1.66;color:var(--muted);
+  }
+  .case-copy code{
+    font-size:11.5px;color:#c6e9f5;background:rgba(34,211,238,.07);
+    padding:1px 4px;border-radius:4px;
+  }
+  .stage{
+    position:relative;margin-top:16px;border-radius:13px;overflow:hidden;
+    border:1px solid rgba(148,163,184,.14);
+    background:radial-gradient(130% 140% at 28% 0%,#0a1323 0%,#060a12 72%);
+  }
+  .stage::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    box-shadow:inset 0 0 46px rgba(0,0,0,.38);
+  }
+  .stage canvas{display:block;width:100%;aspect-ratio:16/9;touch-action:pan-y}
+  .feature .stage canvas{aspect-ratio:21/9}
+  .case-foot{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:auto;padding-top:12px;
+  }
+  code.formula{
+    flex:1 1 auto;min-width:0;
+    font-size:10.5px;line-height:1.5;color:#a9d9e9;
+    background:rgba(34,211,238,.045);
+    border:1px solid rgba(34,211,238,.12);
+    padding:8px 10px;border-radius:8px;
+    white-space:nowrap;overflow-x:auto;scrollbar-width:thin;
+  }
+  .hint{
+    font:600 8.5px var(--mono);letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim);white-space:nowrap;
+  }
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:13px}
+  .control{display:flex;flex-direction:column;gap:7px}
+  .control-label{
+    display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    font:600 8.5px var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+  }
+  .control-label b{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+  input[type="range"]{
+    -webkit-appearance:none;appearance:none;width:100%;height:18px;margin:0;
+    background:transparent;cursor:pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:3px;border-radius:99px;
+    background:linear-gradient(90deg,rgba(34,211,238,.5),rgba(148,163,184,.14));
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;margin-top:-5px;border-radius:50%;
+    background:#eafcff;border:2px solid var(--cyan);box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  input[type="range"]::-moz-range-track{
+    height:3px;border-radius:99px;background:rgba(148,163,184,.18);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:11px;height:11px;border-radius:50%;background:#eafcff;border:2px solid var(--cyan);
+    box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  input[type="range"]:focus-visible{outline:2px solid rgba(34,211,238,.75);outline-offset:4px;border-radius:99px}
+
+  /* ---------- cheat sheet ---------- */
+  .cheatsheet{
+    border-top:1px solid var(--line-soft);
+  }
+  .formula-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .formula-card{
+    padding:16px;border-radius:14px;border:1px solid rgba(148,163,184,.12);
+    background:rgba(12,20,36,.58);
+    transition:border-color .2s,background .2s;
+  }
+  .formula-card:hover{border-color:rgba(34,211,238,.28);background:rgba(12,22,40,.78)}
+  .formula-k{
+    display:block;font:700 8px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);
+  }
+  .formula-card code{
+    display:block;margin:10px 0 8px;
+    font-size:12.5px;line-height:1.5;color:#e6f7ff;
+    white-space:nowrap;overflow-x:auto;
+  }
+  .formula-card p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim)}
+  .also{margin-top:38px;padding-top:26px;border-top:1px dashed rgba(148,163,184,.12)}
+  .also .eyebrow{color:var(--dim);margin-bottom:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips span{
+    padding:7px 11px;border-radius:99px;border:1px solid rgba(148,163,184,.15);
+    background:rgba(148,163,184,.035);
+    font:600 9px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:#a3b3c8;
+    transition:color .2s,border-color .2s;
+  }
+  .chips span:hover{color:var(--cyan);border-color:rgba(34,211,238,.35)}
+
+  /* ---------- footer ---------- */
+  footer{
+    position:relative;z-index:1;
+    max-width:var(--maxw);margin:0 auto;
+    padding:30px clamp(16px,4vw,40px) 44px;
+    border-top:1px solid var(--line-soft);
+    display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    font:500 9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
+  }
+  footer .brand{font-size:10px;letter-spacing:.16em;color:var(--text)}
+  footer em{font-style:normal;color:var(--cyan)}
+
+  /* ---------- motion ---------- */
+  @keyframes revealIn{
+    from{opacity:0;transform:translateY(18px)}
+    to{opacity:1;transform:none}
+  }
+  .reveal{opacity:1}
+  .reveal.in{animation:revealIn .65s ease both}
+
+  :focus-visible{outline:2px solid rgba(34,211,238,.8);outline-offset:3px}
+
+  @media (max-width:980px){
+    .case-grid{grid-template-columns:1fr}
+    .section-head{flex-direction:column;align-items:flex-start;gap:14px}
+    .section-note{max-width:520px}
+  }
+  @media (max-width:700px){
+    .nav-stat{display:none}
+    .hero-stats div{padding:0 20px}
+    h1{letter-spacing:-.035em}
+    .stage canvas{aspect-ratio:16/10}
+    .feature .stage canvas{aspect-ratio:16/10}
+  }
+  @media (max-width:620px){
+    .case{padding:17px;border-radius:16px}
+    .case h3{max-width:88%}
+    .case-num{font-size:42px}
+    .stage canvas,.feature .stage canvas{aspect-ratio:1/1.03}
+    .controls{grid-template-columns:1fr}
+    .hero-stats{gap:0;margin-top:38px}
+    .hero-stats div{padding:0 14px}
+    .hero-stats div:first-child{padding-left:0}
+    .hero-stats span{font-size:17px}
+    .hero-actions{gap:8px}
+    .btn{padding:11px 14px}
+    footer{flex-direction:column;align-items:flex-start}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+    .reveal.in{animation:none}
+    .case,.btn,.chips span{transition:none}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#cases">Skip to the demos</a>
+
+<header class="topbar">
+  <a class="brand" href="#top" aria-label="Mat Play, back to top">
+    <span class="brand-mark" aria-hidden="true"></span>
+    MAT<span class="slash">//</span>PLAY
+  </a>
+  <div class="topbar-right">
+    <span class="nav-stat"><b>08</b> mechanics</span>
+    <span class="nav-stat"><b>08</b> live graphs</span>
+    <button id="pause-btn" class="pause-btn" type="button" aria-pressed="false" title="Pause or resume every canvas animation">Pause motion</button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <canvas id="hero-canvas" data-scene="hero" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <p class="eyebrow">Interactive field guide · 08 live simulations</p>
+      <h1>The <span class="grad">matrices</span><br>behind the pixels</h1>
+      <p class="lede">
+        Every sprite that turns, camera that follows, and building that shrinks into the distance is
+        a grid of numbers doing arithmetic. <strong>Eight live canvases</strong> to show you the grid.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#cases">Explore the cases <span aria-hidden="true">↓</span></a>
+        <a class="btn btn-ghost" href="#cheatsheet">Formula cheat sheet</a>
+      </div>
+      <div class="hero-stats" aria-label="Page statistics">
+        <div><span>08</span><small>mechanics</small></div>
+        <div><span>08</span><small>live graphs</small></div>
+        <div><span>00</span><small>libraries</small></div>
+        <div><span>16</span><small>numbers / 4×4</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cases" id="cases">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">The cases</p>
+        <h2>Eight places matrices do the heavy lifting</h2>
+      </div>
+      <p class="section-note">
+        Every panel is drawn live on a canvas. Move your cursor over the interactive sims,
+        drag the 3D city, and adjust the sliders on the others.
+      </p>
+    </div>
+
+    <div class="case-grid">
+
+      <article class="case feature reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 01 · Core math</span>
+          <span class="case-num" aria-hidden="true">01</span>
+        </div>
+        <h3>One matrix bends the whole plane</h3>
+        <p class="case-copy">
+          A 2×2 matrix is a recipe for moving every point in space. Its two columns are where the
+          x and y axes land, and the grid between them bends into parallelograms. Rotation, scale
+          and shear are all the same operation with different numbers.
+        </p>
+        <div class="stage">
+          <canvas data-scene="warp" role="img" aria-label="A glowing square grid transformed into a moving parallelogram lattice by a 2 by 2 matrix, with basis vectors and a probe point."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">x' = ax + by · y' = cx + dy</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 02 · Sprites</span>
+          <span class="case-num" aria-hidden="true">02</span>
+        </div>
+        <h3>Four numbers rotate and scale a sprite</h3>
+        <p class="case-copy">
+          A renderer never rotates pixels. It multiplies each vertex by a rotation matrix — cosine
+          and sine arranged in two columns — then applies scale. The unit square becomes a
+          parallelogram whose edges are the transformed basis vectors.
+        </p>
+        <div class="stage">
+          <canvas data-scene="rotate" role="img" aria-label="A spaceship transformed by a rotation and scale matrix, with a live graph of the transformed unit square and basis vectors."></canvas>
+        </div>
+        <div class="controls">
+          <label class="control">
+            <span class="control-label">Rotation <b id="rot-angle-val">35°</b></span>
+            <input id="rot-angle" type="range" min="0" max="360" value="35" step="1">
+          </label>
+          <label class="control">
+            <span class="control-label">Scale <b id="rot-scale-val">100%</b></span>
+            <input id="rot-scale" type="range" min="25" max="200" value="100" step="1">
+          </label>
+        </div>
+        <div class="case-foot">
+          <code class="formula">x' = x cosθ − y sinθ · y' = x sinθ + y cosθ</code>
+          <span class="hint">Adjust the sliders</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#a3e635">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 03 · Translation</span>
+          <span class="case-num" aria-hidden="true">03</span>
+        </div>
+        <h3>Translation hides in the third column</h3>
+        <p class="case-copy">
+          Translation doesn't fit in a 2×2 matrix, so engines add a third column and write points as
+          <code>(x, y, 1)</code>. Now one 3×3 multiply can rotate and move a character at once. That
+          extra 1, called a homogeneous coordinate, is the whole trick.
+        </p>
+        <div class="stage">
+          <canvas data-scene="translate" role="img" aria-label="A top-down robot moving across a world grid, with its 3 by 3 affine matrix and translation vector shown live."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">p' = T(t) · R(θ) · p</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#fbbf24">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 04 · Composition</span>
+          <span class="case-num" aria-hidden="true">04</span>
+        </div>
+        <h3>Order changes the answer</h3>
+        <p class="case-copy">
+          Matrices multiply in order, and order matters. Rotate-then-translate leaves a ship somewhere
+          different from translate-then-rotate. The gap grows with the sine of the angle — the bug
+          behind a muzzle flash that refuses to sit on the barrel.
+        </p>
+        <div class="stage">
+          <canvas data-scene="order" role="img" aria-label="Two paths applying rotation and translation in opposite orders, ending at two different positions with the gap plotted against angle."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">T · R · p ≠ R · T · p</code>
+          <button id="order-swap" class="mini-btn" type="button" aria-pressed="false">Order: T · R</button>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#a78bfa">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 05 · Cameras</span>
+          <span class="case-num" aria-hidden="true">05</span>
+        </div>
+        <h3>The camera is an inverse matrix</h3>
+        <p class="case-copy">
+          A camera doesn't move the world; it moves the world into view space with the inverse of its
+          own transform. For a rigid camera, that inverse is just a transpose plus a dot product — no
+          division, no trigonometry beyond the heading.
+        </p>
+        <div class="stage">
+          <canvas data-scene="camera" role="img" aria-label="A top-down level with a rotating camera frustum, beside a view-space plot of the same landmarks transformed by the inverse camera matrix."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">M_view = R(−θ) · T(−p)</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#fb7185">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 06 · Shear</span>
+          <span class="case-num" aria-hidden="true">06</span>
+        </div>
+        <h3>Shear is free squash-and-stretch</h3>
+        <p class="case-copy">
+          Shear slides each row sideways in proportion to its height. Combined with non-uniform scale
+          it gives you leaning cards, italic UI, jelly enemies and fake 3D — usually with no extra
+          sprites. The determinant tracks how much area survives.
+        </p>
+        <div class="stage">
+          <canvas data-scene="shear" role="img" aria-label="A jelly character squashed and sheared by a matrix, with the transformed unit square and determinant shown beside it."></canvas>
+        </div>
+        <div class="controls">
+          <label class="control">
+            <span class="control-label">Shear k <b id="shear-k-val">0.45</b></span>
+            <input id="shear-k" type="range" min="-80" max="120" value="45" step="1">
+          </label>
+          <label class="control">
+            <span class="control-label">Squash <b id="shear-sy-val">100%</b></span>
+            <input id="shear-sy" type="range" min="40" max="160" value="100" step="1">
+          </label>
+        </div>
+        <div class="case-foot">
+          <code class="formula">[1 k; 0 1] · [x; y] = [x + ky; y]</code>
+          <span class="hint">Adjust the sliders</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 07 · Projection</span>
+          <span class="case-num" aria-hidden="true">07</span>
+        </div>
+        <h3>3D is a 4×4 and a divide</h3>
+        <p class="case-copy">
+          A 3D vertex goes through model, view and projection matrices, then gets divided by
+          <code>w</code>. That one divide is why distant buildings shrink. Four numbers per row, one
+          perspective divide, and a flat screen starts to look deep.
+        </p>
+        <div class="stage">
+          <canvas data-scene="perspective" role="img" aria-label="A wireframe neon city rendered with model, view and perspective matrices, beside a plot of the projected normalized device coordinates."></canvas>
+        </div>
+        <div class="controls">
+          <label class="control">
+            <span class="control-label">Field of view <b id="fov-val">62°</b></span>
+            <input id="fov" type="range" min="35" max="95" value="62" step="1">
+          </label>
+          <span class="control-label" style="align-self:end;padding-bottom:13px">Drag the city to orbit</span>
+        </div>
+        <div class="case-foot">
+          <code class="formula">clip = P · V · M · p · ndc = clip / w</code>
+          <span class="hint">Drag to orbit</span>
+        </div>
+      </article>
+
+      <article class="case feature reveal" style="--accent:#f472b6">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 08 · Hierarchy</span>
+          <span class="case-num" aria-hidden="true">08</span>
+        </div>
+        <h3>Bones are matrices inside matrices</h3>
+        <p class="case-copy">
+          Each bone stores only its local transform. Multiply it by every ancestor and you get world
+          space. Rotate the torso and the shoulder, elbow and hand follow automatically — the same
+          stack that drives characters, weapons, robot arms and camera rigs.
+        </p>
+        <div class="stage">
+          <canvas data-scene="hierarchy" role="img" aria-label="A robot arm whose torso, upper arm and forearm are chained matrices, reaching toward the cursor while each local matrix is displayed."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">M_world = M_body · M_shoulder · M_elbow</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="cheatsheet" id="cheatsheet">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Pocket reference</p>
+        <h2>The matrices behind the demos</h2>
+      </div>
+      <p class="section-note">
+        Eight expressions that cover most gameplay transforms. Engines may store them column-major;
+        the arithmetic is the same.
+      </p>
+    </div>
+    <div class="formula-grid">
+      <div class="formula-card">
+        <span class="formula-k">Rotate</span>
+        <code>[ cosθ  −sinθ ]<br>[ sinθ   cosθ ]</code>
+        <p>Two columns, two basis vectors. Positive angles usually turn counter-clockwise in math, clockwise on screen.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Scale + shear</span>
+        <code>[ sx  k ] · [ x ]<br>[ 0   sy]   [ y ]</code>
+        <p>Scale changes area. Shear leans without changing it — which is why the determinant ignores k.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Translate</span>
+        <code>[ 1  0  tx ]<br>[ 0  1  ty ]<br>[ 0  0  1  ]</code>
+        <p>The third column is where translation lives. Points become (x, y, 1) so the multiply can add.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Compose</span>
+        <code>M = T · R · S<br>p' = T(R(S · p))</code>
+        <p>Read right to left: scale first, then rotate, then translate. Swap any two and the result changes.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Hierarchy</span>
+        <code>M_world = M_parent · M_local</code>
+        <p>Walk up the skeleton multiplying as you go. Every child inherits its parent's motion for free.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Inverse rigid</span>
+        <code>V⁻¹ = [ Rᵀ  t ]<br>      [ 0   1 ]</code>
+        <p>For an un-scaled camera, invert rotation by transposing it, then add the camera position back.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Project</span>
+        <code>clip = P · V · M · p<br>ndc = clip.xy / clip.w</code>
+        <p>The perspective divide is the whole illusion. Near geometry has small w; far geometry has large w.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Determinant</span>
+        <code>det = ad − bc</code>
+        <p>Area scale factor. Zero means the matrix flattened space; negative means it also flipped it.</p>
+      </div>
+    </div>
+    <div class="also">
+      <p class="eyebrow">Also hiding in plain sight</p>
+      <div class="chips">
+        <span>Sprite batching</span>
+        <span>GPU instancing</span>
+        <span>Normal transforms</span>
+        <span>Skinning</span>
+        <span>Animation retargeting</span>
+        <span>UI layout</span>
+        <span>Navmesh to world</span>
+        <span>Ray–AABB slabs</span>
+        <span>Shadow projection</span>
+        <span>Particle emitters</span>
+        <span>Rotating minimaps</span>
+        <span>Camera shake</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>MAT<span class="slash">//</span>PLAY</a>
+  <span>Built with vanilla JS + Canvas · no engines, no libraries, <em>no matrices were transposed</em></span>
+  <span>08 demos · 60 fps · pause anytime</span>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ============================================================
+     CONSTANTS & HELPERS
+     ============================================================ */
+  const TAU = Math.PI * 2;
+  const WIN = 8;
+
+  const C = {
+    bg: '#070b14',
+    panel: '#0a1120',
+    text: '#e7eef8',
+    dim: '#6f7f98',
+    muted: '#93a4bc',
+    cyan: '#22d3ee',
+    magenta: '#f472b6',
+    lime: '#a3e635',
+    amber: '#fbbf24',
+    red: '#fb7185',
+    violet: '#a78bfa',
+    slate: '#94a3b8'
+  };
+
+  const MONO = 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Liberation Mono", monospace';
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const toDeg = (r) => ((r * 180 / Math.PI) % 360 + 360) % 360;
+  const toRad = (d) => d * Math.PI / 180;
+
+  function wrapAngle(a) {
+    a = (a + Math.PI) % TAU;
+    if (a < 0) a += TAU;
+    return a - Math.PI;
+  }
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawText(ctx, str, x, y, opts = {}) {
+    const {
+      color = C.dim, size = 10, font = MONO, weight = 500,
+      align = 'left', baseline = 'alphabetic', alpha = 1
+    } = opts;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.font = `${weight} ${size}px ${font}`;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  function line(ctx, x1, y1, x2, y2, color, w = 1, dash = null) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function arrow(ctx, x1, y1, x2, y2, color, w = 1.5, head = 7) {
+    line(ctx, x1, y1, x2, y2, color, w);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - Math.cos(a - 0.42) * head, y2 - Math.sin(a - 0.42) * head);
+    ctx.lineTo(x2 - Math.cos(a + 0.42) * head, y2 - Math.sin(a + 0.42) * head);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function dot(ctx, x, y, r, color, blur = 8) {
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function inRect(p, r, pad = 0) {
+    return !!p && p.x >= r.x + pad && p.x <= r.x + r.w - pad && p.y >= r.y + pad && p.y <= r.y + r.h - pad;
+  }
+
+  function pill(ctx, x, y, w, h, border, fill = 'rgba(7,11,20,.62)', radius = 7) {
+    ctx.save();
+    ctx.fillStyle = fill;
+    rr(ctx, x, y, w, h, radius);
+    ctx.fill();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function panel(ctx, r, label, accent, fs) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,17,31,.58)';
+    rr(ctx, r.x, r.y, r.w, r.h, 12);
+    ctx.fill();
+
+    ctx.save();
+    rr(ctx, r.x, r.y, r.w, r.h, 12);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(148,163,184,.055)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const step = 26;
+    for (let x = r.x + step; x < r.x + r.w; x += step) {
+      ctx.moveTo(x, r.y);
+      ctx.lineTo(x, r.y + r.h);
+    }
+    for (let y = r.y + step; y < r.y + r.h; y += step) {
+      ctx.moveTo(r.x, y);
+      ctx.lineTo(r.x + r.w, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(148,163,184,.14)';
+    ctx.lineWidth = 1;
+    rr(ctx, r.x + .5, r.y + .5, r.w - 1, r.h - 1, 12);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(accent, .5);
+    ctx.lineWidth = 1.5;
+    const tick = 7, inset = 6;
+    ctx.beginPath();
+    ctx.moveTo(r.x + inset, r.y + inset + tick); ctx.lineTo(r.x + inset, r.y + inset); ctx.lineTo(r.x + inset + tick, r.y + inset);
+    ctx.moveTo(r.x + r.w - inset - tick, r.y + inset); ctx.lineTo(r.x + r.w - inset, r.y + inset); ctx.lineTo(r.x + r.w - inset, r.y + inset + tick);
+    ctx.moveTo(r.x + inset, r.y + r.h - inset - tick); ctx.lineTo(r.x + inset, r.y + r.h - inset); ctx.lineTo(r.x + inset + tick, r.y + r.h - inset);
+    ctx.moveTo(r.x + r.w - inset - tick, r.y + r.h - inset); ctx.lineTo(r.x + r.w - inset, r.y + r.h - inset); ctx.lineTo(r.x + r.w - inset, r.y + r.h - inset - tick);
+    ctx.stroke();
+
+    if (label) {
+      ctx.fillStyle = rgba(accent, .9);
+      ctx.beginPath();
+      ctx.arc(r.x + 13, r.y + 14, 2.4, 0, TAU);
+      ctx.fill();
+      drawText(ctx, label, r.x + 21, r.y + 17.5, {
+        color: rgba(accent, .82),
+        size: Math.max(8, fs * 0.8),
+        weight: 700
+      });
+    }
+    ctx.restore();
+  }
+
+  function plotRect(g, l = 34, r = 12, t = 30, b = 22) {
+    return {
+      x: g.x + l,
+      y: g.y + t,
+      w: Math.max(20, g.w - l - r),
+      h: Math.max(20, g.h - t - b)
+    };
+  }
+
+  function fsFor(sc) {
+    return clamp(Math.min(sc.w, sc.h) * 0.032, 8.5, 12);
+  }
+
+  /* ============================================================
+     MATRIX MATH
+     ============================================================ */
+  const M3 = {
+    id: () => [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    mul(A, B) {
+      const r = new Array(9);
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          r[i * 3 + j] = A[i * 3] * B[j] + A[i * 3 + 1] * B[3 + j] + A[i * 3 + 2] * B[6 + j];
+        }
+      }
+      return r;
+    },
+    chain(...ms) {
+      return ms.reduce((a, b) => M3.mul(a, b), M3.id());
+    },
+    rot(a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return [c, -s, 0, s, c, 0, 0, 0, 1];
+    },
+    scale(sx, sy) {
+      return [sx, 0, 0, 0, sy, 0, 0, 0, 1];
+    },
+    shear(kx, ky = 0) {
+      return [1, kx, 0, ky, 1, 0, 0, 0, 1];
+    },
+    translate(x, y) {
+      return [1, 0, x, 0, 1, y, 0, 0, 1];
+    },
+    apply(m, x, y) {
+      return { x: m[0] * x + m[1] * y + m[2], y: m[3] * x + m[4] * y + m[5] };
+    },
+    applyDir(m, x, y) {
+      return { x: m[0] * x + m[1] * y, y: m[3] * x + m[4] * y };
+    },
+    det(m) {
+      return m[0] * m[4] - m[1] * m[3];
+    },
+    inv(m) {
+      const d = M3.det(m);
+      if (Math.abs(d) < 1e-9) return M3.id();
+      const a = m[4] / d, b = -m[1] / d, c = -m[3] / d, e = m[0] / d;
+      return [
+        a, b, -(a * m[2] + b * m[5]),
+        c, e, -(c * m[2] + e * m[5]),
+        0, 0, 1
+      ];
+    }
+  };
+
+  const M4 = {
+    id: () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    mul(A, B) {
+      const r = new Array(16).fill(0);
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          let s = 0;
+          for (let k = 0; k < 4; k++) s += A[i * 4 + k] * B[k * 4 + j];
+          r[i * 4 + j] = s;
+        }
+      }
+      return r;
+    },
+    perspective(fovy, aspect, near, far) {
+      const f = 1 / Math.tan(fovy / 2);
+      return [
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (far + near) / (near - far), (2 * far * near) / (near - far),
+        0, 0, -1, 0
+      ];
+    },
+    lookAt(eye, target, up) {
+      const f = norm3(target.x - eye.x, target.y - eye.y, target.z - eye.z);
+      const s = norm3(
+        f.y * up.z - f.z * up.y,
+        f.z * up.x - f.x * up.z,
+        f.x * up.y - f.y * up.x
+      );
+      const u = {
+        x: s.y * f.z - s.z * f.y,
+        y: s.z * f.x - s.x * f.z,
+        z: s.x * f.y - s.y * f.x
+      };
+      return [
+        s.x, s.y, s.z, -(s.x * eye.x + s.y * eye.y + s.z * eye.z),
+        u.x, u.y, u.z, -(u.x * eye.x + u.y * eye.y + u.z * eye.z),
+        -f.x, -f.y, -f.z, (f.x * eye.x + f.y * eye.y + f.z * eye.z),
+        0, 0, 0, 1
+      ];
+    },
+    apply(m, x, y, z, w = 1) {
+      return {
+        x: m[0] * x + m[1] * y + m[2] * z + m[3] * w,
+        y: m[4] * x + m[5] * y + m[6] * z + m[7] * w,
+        z: m[8] * x + m[9] * y + m[10] * z + m[11] * w,
+        w: m[12] * x + m[13] * y + m[14] * z + m[15] * w
+      };
+    }
+  };
+
+  function norm3(x, y, z) {
+    const d = Math.hypot(x, y, z) || 1;
+    return { x: x / d, y: y / d, z: z / d };
+  }
+
+  function useMatrix(ctx, m) {
+    ctx.transform(m[0], m[3], m[1], m[4], m[2], m[5]);
+  }
+
+  function drawAxes(ctx, m, len, color, labels = false) {
+    const ox = m[2], oy = m[5];
+    const nx = Math.hypot(m[0], m[3]) || 1;
+    const ny = Math.hypot(m[1], m[4]) || 1;
+    const xd = { x: m[0] / nx * len, y: m[3] / nx * len };
+    const yd = { x: m[1] / ny * len, y: m[4] / ny * len };
+    arrow(ctx, ox, oy, ox + xd.x, oy + xd.y, color, 1.2, 4.5);
+    arrow(ctx, ox, oy, ox + yd.x, oy + yd.y, rgba(color, .55), 1.2, 4.5);
+    if (labels) {
+      drawText(ctx, 'x', ox + xd.x * 1.18, oy + xd.y * 1.18 + 3, {
+        color, size: 8, weight: 700, align: 'center'
+      });
+      drawText(ctx, 'y', ox + yd.x * 1.18, oy + yd.y * 1.18 + 3, {
+        color: rgba(color, .7), size: 8, weight: 700, align: 'center'
+      });
+    }
+  }
+
+  function matrixBox(ctx, x, y, rows, cols, vals, opts = {}) {
+    const cell = opts.cell || 26;
+    const accent = opts.accent || C.cyan;
+    const fs = opts.fs || Math.max(7, cell * 0.35);
+    const w = cols * cell, h = rows * cell;
+    const bl = 8;
+    ctx.save();
+    if (opts.tint) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const col = opts.tint(r, c);
+          if (!col) continue;
+          ctx.fillStyle = rgba(col, .11);
+          rr(ctx, x + c * cell + 1, y + r * cell + 1, cell - 2, cell - 2, 4);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.strokeStyle = opts.bracket || 'rgba(148,163,184,.42)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - bl, y - 4);
+    ctx.lineTo(x - bl - 3, y - 4);
+    ctx.lineTo(x - bl - 3, y + h + 4);
+    ctx.lineTo(x - bl, y + h + 4);
+    ctx.moveTo(x + w + bl, y - 4);
+    ctx.lineTo(x + w + bl + 3, y - 4);
+    ctx.lineTo(x + w + bl + 3, y + h + 4);
+    ctx.lineTo(x + w + bl, y + h + 4);
+    ctx.stroke();
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const v = vals[r * cols + c];
+        const col = opts.tint ? (opts.tint(r, c) || accent) : (opts.color || C.text);
+        drawText(ctx, v, x + c * cell + cell / 2, y + r * cell + cell / 2 + fs * 0.35, {
+          color: col, size: fs, weight: 600, align: 'center'
+        });
+      }
+    }
+    ctx.restore();
+    return { w: w + bl * 2 + 4, h };
+  }
+
+  function fmt(v, n = 2) {
+    return (Math.abs(v) < 0.005 ? 0 : v).toFixed(n);
+  }
+
+  function shipPath(ctx, scale = 1) {
+    ctx.beginPath();
+    ctx.moveTo(1.35 * scale, 0);
+    ctx.lineTo(0.12 * scale, 0.72 * scale);
+    ctx.lineTo(-0.62 * scale, 0.48 * scale);
+    ctx.lineTo(-0.42 * scale, 0);
+    ctx.lineTo(-0.62 * scale, -0.48 * scale);
+    ctx.lineTo(0.12 * scale, -0.72 * scale);
+    ctx.closePath();
+  }
+
+  /* ============================================================
+     SCENE PLUMBING
+     ============================================================ */
+  let paused = false;
+  let redraw = true;
+  let last = 0;
+  const scenes = [];
+  const builders = {};
+
+  function newScene(canvas) {
+    return {
+      canvas,
+      ctx: canvas.getContext('2d'),
+      w: 0,
+      h: 0,
+      t: 8,
+      visible: true,
+      dirty: true,
+      pointer: null
+    };
+  }
+
+  function enablePointer(sc) {
+    sc.canvas.style.cursor = 'crosshair';
+    const set = (e) => {
+      const r = sc.canvas.getBoundingClientRect();
+      sc.pointer = { x: e.clientX - r.left, y: e.clientY - r.top };
+      redraw = true;
+    };
+    sc.canvas.addEventListener('pointermove', set);
+    sc.canvas.addEventListener('pointerdown', set);
+    sc.canvas.addEventListener('pointerleave', () => {
+      sc.pointer = null;
+      redraw = true;
+    });
+  }
+
+  function enableDrag(sc, onDrag) {
+    sc.canvas.style.cursor = 'grab';
+    sc.canvas.style.touchAction = 'none';
+    let drag = null;
+    sc.canvas.addEventListener('pointerdown', (e) => {
+      drag = { x: e.clientX, y: e.clientY };
+      sc.canvas.style.cursor = 'grabbing';
+      sc.canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    sc.canvas.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      drag = { x: e.clientX, y: e.clientY };
+      onDrag(dx, dy);
+      redraw = true;
+    });
+    const end = () => {
+      drag = null;
+      sc.canvas.style.cursor = 'grab';
+    };
+    sc.canvas.addEventListener('pointerup', end);
+    sc.canvas.addEventListener('pointercancel', end);
+  }
+
+  function fit(sc) {
+    const rect = sc.canvas.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.round(rect.width * dpr);
+    const ph = Math.round(rect.height * dpr);
+    if (sc.canvas.width !== pw || sc.canvas.height !== ph) {
+      sc.canvas.width = pw;
+      sc.canvas.height = ph;
+    }
+    sc.w = pw / dpr;
+    sc.h = ph / dpr;
+    sc.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sc.dirty = true;
+    return true;
+  }
+
+  function panes(W, H) {
+    const pad = W < 500 ? 8 : 12;
+    const gap = W < 500 ? 8 : 12;
+    const stacked = W / H < 1.3;
+    if (stacked) {
+      const sceneH = (H - pad * 2 - gap) * 0.57;
+      return {
+        scene: { x: pad, y: pad, w: W - pad * 2, h: sceneH },
+        graph: { x: pad, y: pad + sceneH + gap, w: W - pad * 2, h: H - pad * 2 - sceneH - gap },
+        stacked: true
+      };
+    }
+    const sceneW = (W - pad * 2 - gap) * 0.58;
+    return {
+      scene: { x: pad, y: pad, w: sceneW, h: H - pad * 2 },
+      graph: { x: pad + sceneW + gap, y: pad, w: W - pad * 2 - sceneW - gap, h: H - pad * 2 },
+      stacked: false
+    };
+  }
+
+  /* ============================================================
+     SCENE 00 — HERO
+     ============================================================ */
+  builders.hero = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 3.2;
+
+    const specks = Array.from({ length: 46 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: Math.random() * 1.1 + .3,
+      p: Math.random() * TAU,
+      s: Math.random() * .6 + .3
+    }));
+
+    const lattice = (ctx, cx, cy, unit, m, color, alpha) => {
+      ctx.save();
+      ctx.strokeStyle = rgba(color, alpha);
+      ctx.lineWidth = 1;
+      const n = 9;
+      for (let i = -n; i <= n; i++) {
+        const a = M3.apply(m, i * .34, -n * .34);
+        const b = M3.apply(m, i * .34, n * .34);
+        ctx.beginPath();
+        ctx.moveTo(cx + a.x * unit, cy - a.y * unit);
+        ctx.lineTo(cx + b.x * unit, cy - b.y * unit);
+        ctx.stroke();
+        const c = M3.apply(m, -n * .34, i * .34);
+        const d = M3.apply(m, n * .34, i * .34);
+        ctx.beginPath();
+        ctx.moveTo(cx + c.x * unit, cy - c.y * unit);
+        ctx.lineTo(cx + d.x * unit, cy - d.y * unit);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      const t = sc.t;
+      ctx.clearRect(0, 0, w, h);
+
+      if (w > 880) {
+        const cx = w * 0.79;
+        const cy = h * 0.47;
+        const unit = Math.min(w, h) * 0.155;
+        const m = M3.chain(
+          M3.rot(t * 0.17),
+          M3.shear(0.3 * Math.sin(t * 0.45), 0),
+          M3.scale(1.16 + 0.08 * Math.sin(t * .6), 0.9)
+        );
+
+        lattice(ctx, cx, cy, unit, M3.id(), C.cyan, .055);
+        lattice(ctx, cx, cy, unit, m, C.cyan, .16);
+
+        const p0 = M3.apply(m, 0, 0);
+        const p1 = M3.apply(m, 1, 0);
+        const p2 = M3.apply(m, 1, 1);
+        const p3 = M3.apply(m, 0, 1);
+        const toS = (p) => ({ x: cx + p.x * unit, y: cy - p.y * unit });
+        const q0 = toS(p0), q1 = toS(p1), q2 = toS(p2), q3 = toS(p3);
+        ctx.save();
+        ctx.fillStyle = 'rgba(34,211,238,.075)';
+        ctx.beginPath();
+        ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.lineTo(q2.x, q2.y); ctx.lineTo(q3.x, q3.y);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(34,211,238,.55)';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.restore();
+
+        arrow(ctx, q0.x, q0.y, q1.x, q1.y, C.cyan, 1.6, 7);
+        arrow(ctx, q0.x, q0.y, q3.x, q3.y, C.magenta, 1.6, 7);
+        dot(ctx, q1.x, q1.y, 3.2, C.cyan, 10);
+        dot(ctx, q3.x, q3.y, 3.2, C.magenta, 10);
+
+        drawText(ctx, 'e₁', q1.x + 9, q1.y + 4, { color: C.cyan, size: 9, weight: 700 });
+        drawText(ctx, 'e₂', q3.x + 9, q3.y + 4, { color: C.magenta, size: 9, weight: 700 });
+
+        const rows = [
+          ['a', fmt(m[0], 1), C.cyan],
+          ['b', fmt(m[1], 1), C.cyan],
+          ['c', fmt(m[3], 1), C.magenta],
+          ['d', fmt(m[4], 1), C.magenta]
+        ];
+        rows.forEach((row, i) => {
+          drawText(ctx, row[0], cx + unit * 2.15, cy - unit * .75 + i * 15, {
+            color: C.dim, size: 8.5, align: 'right'
+          });
+          drawText(ctx, row[1], cx + unit * 2.7, cy - unit * .75 + i * 15, {
+            color: row[2], size: 9, weight: 700, align: 'right'
+          });
+        });
+
+        // orbiting probe
+        const a = t * 0.7;
+        const lp = { x: Math.cos(a) * 1.9, y: Math.sin(a) * 1.25 };
+        const wp = M3.apply(m, lp.x, lp.y);
+        const sp = toS(wp);
+        line(ctx, cx, cy, sp.x, sp.y, 'rgba(163,230,53,.28)', 1, [3, 5]);
+        dot(ctx, sp.x, sp.y, 3, C.lime, 12);
+      } else {
+        const m = M3.chain(
+          M3.rot(t * 0.12),
+          M3.shear(0.22 * Math.sin(t * 0.4), 0),
+          M3.scale(1.2, 0.9)
+        );
+        lattice(ctx, w * 0.5, h * 0.55, Math.min(w, h) * 0.17, m, C.cyan, .09);
+      }
+
+      for (const st of specks) {
+        const yy = ((st.y - t * 0.008 * st.s) % 1 + 1) % 1;
+        const tw = 0.12 + 0.32 * (0.5 + 0.5 * Math.sin(t * 1.2 + st.p));
+        ctx.save();
+        ctx.fillStyle = `rgba(200,235,255,${tw})`;
+        ctx.beginPath();
+        ctx.arc(st.x * w, yy * h, st.r, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 01 — WARPED GRID
+     ============================================================ */
+  builders.warp = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 2.4;
+    enablePointer(sc);
+
+    const basisSquare = (ctx, cx, cy, unit, m, color, fill) => {
+      const pts = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => {
+        const p = M3.apply(m, x, y);
+        return { x: cx + p.x * unit, y: cy - p.y * unit };
+      });
+      ctx.save();
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      ctx.restore();
+      return pts;
+    };
+
+    const star = (ctx, cx, cy, unit, m, color, fill) => {
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const a = i / 80 * TAU;
+        const p = M3.apply(m, Math.cos(a), Math.sin(a));
+        const x = cx + p.x * unit;
+        const y = cy - p.y * unit;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / WARPED GRID', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / BASIS + AREA', C.cyan, fs);
+
+      const t = sc.t;
+      const m = M3.chain(
+        M3.rot(t * 0.22),
+        M3.shear(0.34 * Math.sin(t * 0.47), 0),
+        M3.scale(1.1 + 0.16 * Math.sin(t * 0.63), 0.88 + 0.12 * Math.cos(t * 0.81))
+      );
+
+      const cx = s.x + s.w * 0.47;
+      const cy = s.y + s.h * 0.55;
+      const unit = Math.min(s.w, s.h) * 0.235;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // untouched reference grid
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,.055)';
+      ctx.lineWidth = 1;
+      for (let i = -3; i <= 3; i++) {
+        const a = M3.apply(M3.id(), i, -3);
+        const b = M3.apply(M3.id(), i, 3);
+        line(ctx, cx + a.x * unit, cy - a.y * unit, cx + b.x * unit, cy - b.y * unit, 'rgba(148,163,184,.05)', 1);
+        line(ctx, cx + -3 * unit, cy - i * unit, cx + 3 * unit, cy - i * unit, 'rgba(148,163,184,.05)', 1);
+      }
+      ctx.restore();
+
+      // transformed lattice
+      for (let i = -3; i <= 3; i++) {
+        const a = M3.apply(m, i, -3);
+        const b = M3.apply(m, i, 3);
+        const alpha = i === 0 ? .26 : .12;
+        line(ctx, cx + a.x * unit, cy - a.y * unit, cx + b.x * unit, cy - b.y * unit, rgba(C.cyan, alpha), 1);
+        const c = M3.apply(m, -3, i);
+        const d = M3.apply(m, 3, i);
+        line(ctx, cx + c.x * unit, cy - c.y * unit, cx + d.x * unit, cy - d.y * unit, rgba(C.cyan, alpha), 1);
+      }
+
+      for (let i = -3; i <= 3; i++) {
+        for (let j = -3; j <= 3; j++) {
+          const p = M3.apply(m, i, j);
+          dot(ctx, cx + p.x * unit, cy - p.y * unit, 1.1, rgba(C.cyan, .28), 4);
+        }
+      }
+
+      basisSquare(ctx, cx, cy, unit, m, 'rgba(34,211,238,.85)', 'rgba(34,211,238,.12)');
+      star(ctx, cx, cy, unit, m, 'rgba(34,211,238,.28)', 'rgba(34,211,238,.025)');
+
+      const e1 = M3.apply(m, 1, 0);
+      const e2 = M3.apply(m, 0, 1);
+      arrow(ctx, cx, cy, cx + e1.x * unit, cy - e1.y * unit, C.cyan, 1.8, 7);
+      arrow(ctx, cx, cy, cx + e2.x * unit, cy - e2.y * unit, C.magenta, 1.8, 7);
+      drawText(ctx, 'e₁', cx + e1.x * unit + 9, cy - e1.y * unit + 4, { color: C.cyan, size: fs, weight: 700 });
+      drawText(ctx, 'e₂', cx + e2.x * unit + 9, cy - e2.y * unit + 4, { color: C.magenta, size: fs, weight: 700 });
+
+      const inside = inRect(sc.pointer, s, 10);
+      let local;
+      if (inside) {
+        local = { x: (sc.pointer.x - cx) / unit, y: -(sc.pointer.y - cy) / unit };
+      } else {
+        const a = sc.t * 0.8;
+        local = { x: Math.cos(a) * 2.25, y: Math.sin(a) * 1.7 };
+      }
+      const mapped = M3.apply(m, local.x, local.y);
+      const mx = cx + mapped.x * unit;
+      const my = cy - mapped.y * unit;
+      line(ctx, cx, cy, mx, my, 'rgba(163,230,53,.4)', 1.2, [3, 4]);
+      dot(ctx, mx, my, 4.2, C.lime, 14);
+      drawText(ctx, 'M · p', mx + 10, my - 9, { color: C.lime, size: Math.max(8, fs - 1), weight: 700 });
+      ctx.restore();
+
+      // matrix badge
+      const bx = s.x + s.w - 108;
+      pill(ctx, bx - 10, s.y + 30, 98, 86, 'rgba(148,163,184,.14)');
+      drawText(ctx, 'M', bx + 2, s.y + 45, { color: C.dim, size: Math.max(8, fs - 2), weight: 700 });
+      matrixBox(ctx, bx + 18, s.y + 48, 2, 2, [
+        fmt(m[0]), fmt(m[1]),
+        fmt(m[3]), fmt(m[4])
+      ], {
+        cell: 28, fs: Math.max(7, fs - 2), accent: C.cyan,
+        color: C.text
+      });
+      drawText(ctx, `det ${fmt(M3.det(m))}`, bx + 2, s.y + 111, {
+        color: '#a9d9e9', size: Math.max(7, fs - 2)
+      });
+
+      // graph
+      const pr = plotRect(g, 30, 14, 34, 36);
+      const gcx = pr.x + pr.w / 2;
+      const gcy = pr.y + pr.h / 2;
+      const gu = Math.min(pr.w, pr.h) * 0.19;
+
+      line(ctx, pr.x, gcy, pr.x + pr.w, gcy, 'rgba(148,163,184,.14)', 1);
+      line(ctx, gcx, pr.y, gcx, pr.y + pr.h, 'rgba(148,163,184,.14)', 1);
+      for (let i = -2; i <= 2; i++) {
+        if (i === 0) continue;
+        line(ctx, gcx + i * gu, pr.y, gcx + i * gu, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+        line(ctx, pr.x, gcy + i * gu, pr.x + pr.w, gcy + i * gu, 'rgba(148,163,184,.05)', 1);
+      }
+
+      star(ctx, gcx, gcy, gu, m, 'rgba(244,114,182,.38)', 'rgba(244,114,182,.035)');
+      basisSquare(ctx, gcx, gcy, gu, m, 'rgba(34,211,238,.85)', 'rgba(34,211,238,.1)');
+      const ge1 = M3.apply(m, 1, 0);
+      const ge2 = M3.apply(m, 0, 1);
+      arrow(ctx, gcx, gcy, gcx + ge1.x * gu, gcy - ge1.y * gu, C.cyan, 1.4, 5);
+      arrow(ctx, gcx, gcy, gcx + ge2.x * gu, gcy - ge2.y * gu, C.magenta, 1.4, 5);
+      dot(ctx, gcx + gep(local.x, local.y, ge1, ge2).x, gcy - gep(local.x, local.y, ge1, ge2).y, 3.4, C.lime, 10);
+
+      const det = M3.det(m);
+      const bw = pr.w * 0.7;
+      const bx2 = pr.x + (pr.w - bw) / 2;
+      const by = pr.y + pr.h + 12;
+      line(ctx, bx2, by, bx2 + bw, by, 'rgba(148,163,184,.16)', 4);
+      line(ctx, bx2, by, bx2 + bw * clamp(det / 2.4, 0, 1), by, rgba(C.lime, .75), 4);
+      drawText(ctx, 'AREA SCALE', bx2, by - 7, { color: C.dim, size: Math.max(7, fs - 2) });
+      drawText(ctx, fmt(det), bx2 + bw, by - 7, { color: C.lime, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+    };
+
+    const gep = (x, y, e1, e2) => ({
+      x: e1.x * x + e2.x * y,
+      y: e1.y * x + e2.y * y
+    });
+
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 02 — ROTATE + SCALE
+     ============================================================ */
+  builders.rotate = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 4.2;
+    sc.angle = 35;
+    sc.scale = 100;
+
+    const angleEl = document.getElementById('rot-angle');
+    const scaleEl = document.getElementById('rot-scale');
+    const angleVal = document.getElementById('rot-angle-val');
+    const scaleVal = document.getElementById('rot-scale-val');
+
+    if (angleEl) angleEl.addEventListener('input', () => {
+      sc.angle = +angleEl.value;
+      if (angleVal) angleVal.textContent = sc.angle + '°';
+      redraw = true;
+    });
+    if (scaleEl) scaleEl.addEventListener('input', () => {
+      sc.scale = +scaleEl.value;
+      if (scaleVal) scaleVal.textContent = sc.scale + '%';
+      redraw = true;
+    });
+
+    const drawGrid = (ctx, cx, cy, u, m, alpha) => {
+      ctx.save();
+      ctx.strokeStyle = `rgba(148,163,184,${alpha})`;
+      ctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        const a = M3.apply(m, i, -2);
+        const b = M3.apply(m, i, 2);
+        line(ctx, cx + a.x * u, cy - a.y * u, cx + b.x * u, cy - b.y * u, `rgba(148,163,184,${alpha})`, 1);
+        const c = M3.apply(m, -2, i);
+        const d = M3.apply(m, 2, i);
+        line(ctx, cx + c.x * u, cy - c.y * u, cx + d.x * u, cy - d.y * u, `rgba(148,163,184,${alpha})`, 1);
+      }
+      ctx.restore();
+    };
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / ROTATE + SCALE', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / UNIT SQUARE', C.cyan, fs);
+
+      const theta = toRad(sc.angle);
+      const k = sc.scale / 100;
+      const m = M3.mul(M3.scale(k, k), M3.rot(theta));
+
+      const cx = s.x + s.w * 0.5;
+      const cy = s.y + s.h * 0.54;
+      const size = Math.min(s.w, s.h) * 0.19;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      drawGrid(ctx, cx, cy, size * 0.7, M3.id(), .055);
+      drawGrid(ctx, cx, cy, size * 0.7, m, .12);
+
+      // ghost: untransformed
+      ctx.save();
+      ctx.globalAlpha = .22;
+      ctx.translate(cx, cy);
+      ctx.scale(size, size);
+      shipPath(ctx, 1);
+      ctx.fillStyle = 'rgba(148,163,184,.18)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(148,163,184,.6)';
+      ctx.lineWidth = 1 / size;
+      ctx.stroke();
+      ctx.restore();
+
+      // transformed ship
+      const ms = M3.mul(M3.translate(cx, cy), M3.scale(size, -size));
+      const world = M3.mul(ms, m);
+      ctx.save();
+      useMatrix(ctx, world);
+      shipPath(ctx, 1);
+      ctx.fillStyle = 'rgba(34,211,238,.16)';
+      ctx.fill();
+      ctx.strokeStyle = C.cyan;
+      ctx.lineWidth = 1.6 / size;
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.restore();
+
+      // engine flare
+      const flame = 0.5 + 0.28 * Math.sin(sc.t * 13);
+      const f0 = M3.apply(world, -0.46, 0);
+      const f1 = M3.apply(world, -1.04 - flame, 0.16);
+      const f2 = M3.apply(world, -1.04 - flame, -0.16);
+      ctx.save();
+      ctx.fillStyle = 'rgba(251,191,36,.7)';
+      ctx.beginPath();
+      ctx.moveTo(f0.x, f0.y);
+      ctx.lineTo(f1.x, f1.y);
+      ctx.lineTo(f2.x, f2.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // rotation arc
+      ctx.save();
+      ctx.strokeStyle = 'rgba(163,230,53,.55)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, size * 0.95, 0, theta, false);
+      ctx.stroke();
+      ctx.restore();
+      const mid = theta / 2;
+      drawText(ctx, 'θ', cx + Math.cos(mid) * (size * 0.95 + 12), cy + Math.sin(mid) * (size * 0.95 + 12), {
+        color: C.lime, size: fs + 1, weight: 700, align: 'center', baseline: 'middle'
+      });
+
+      dot(ctx, cx, cy, 3.5, C.cyan, 9);
+      line(ctx, cx, cy, cx + Math.cos(-theta) * size * 1.25, cy + Math.sin(-theta) * size * 1.25, 'rgba(34,211,238,.4)', 1, [3, 4]);
+
+      ctx.restore();
+
+      const rx = s.x + s.w - 12;
+      const rows = [
+        ['θ', sc.angle + '°', C.lime],
+        ['k', k.toFixed(2), C.cyan],
+        ['det', fmt(k * k), C.magenta]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 38 + i * 16;
+        drawText(ctx, row[0], rx - 58, yy, { color: C.dim, size: Math.max(8, fs - 2), align: 'right' });
+        drawText(ctx, row[1], rx, yy, { color: row[2], size: fs - 1, weight: 700, align: 'right' });
+      });
+
+      // graph
+      const pr = plotRect(g, 28, 14, 34, 42);
+      const gcx = pr.x + pr.w / 2;
+      const gcy = pr.y + pr.h / 2;
+      const gu = Math.min(pr.w, pr.h) * 0.26;
+      line(ctx, pr.x, gcy, pr.x + pr.w, gcy, 'rgba(148,163,184,.14)', 1);
+      line(ctx, gcx, pr.y, gcx, pr.y + pr.h, 'rgba(148,163,184,.14)', 1);
+
+      // original square
+      ctx.save();
+      ctx.setLineDash([3, 4]);
+      ctx.strokeStyle = 'rgba(148,163,184,.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(gcx, gcy - gu, gu, gu);
+      ctx.restore();
+
+      // transformed square + circle
+      const pts = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => {
+        const p = M3.apply(m, x, y);
+        return { x: gcx + p.x * gu, y: gcy - p.y * gu };
+      });
+      ctx.save();
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(34,211,238,.12)';
+      ctx.fill();
+      ctx.strokeStyle = C.cyan;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i <= 72; i++) {
+        const a = i / 72 * TAU;
+        const p = M3.apply(m, Math.cos(a), Math.sin(a));
+        const x = gcx + p.x * gu;
+        const y = gcy - p.y * gu;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.setLineDash([3, 5]);
+      ctx.strokeStyle = 'rgba(244,114,182,.45)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      const e1 = M3.apply(m, 1, 0);
+      const e2 = M3.apply(m, 0, 1);
+      arrow(ctx, gcx, gcy, gcx + e1.x * gu, gcy - e1.y * gu, C.cyan, 1.4, 5);
+      arrow(ctx, gcx, gcy, gcx + e2.x * gu, gcy - e2.y * gu, C.magenta, 1.4, 5);
+      drawText(ctx, 'e₁', gcx + e1.x * gu + 7, gcy - e1.y * gu + 3, { color: C.cyan, size: Math.max(7, fs - 2), weight: 700 });
+      drawText(ctx, 'e₂', gcx + e2.x * gu + 7, gcy - e2.y * gu + 3, { color: C.magenta, size: Math.max(7, fs - 2), weight: 700 });
+
+      const area = Math.abs(k * k);
+      const bw = pr.w * 0.72;
+      const bx = pr.x + (pr.w - bw) / 2;
+      const by = pr.y + pr.h + 16;
+      line(ctx, bx, by, bx + bw, by, 'rgba(148,163,184,.15)', 4);
+      line(ctx, bx, by, bx + bw * clamp(area / 4, 0, 1), by, rgba(C.lime, .75), 4);
+      drawText(ctx, 'AREA × det', bx, by - 7, { color: C.dim, size: Math.max(7, fs - 2) });
+      drawText(ctx, fmt(area), bx + bw, by - 7, { color: C.lime, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 03 — TRANSLATION / AFFINE
+     ============================================================ */
+  builders.translate = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 3.4;
+    sc.pos = { x: -1.8, y: -0.4 };
+    sc.heading = 0;
+    sc.trail = [];
+    enablePointer(sc);
+
+    const crates = [
+      { x: 3.5, y: 2.0, w: 1.15, h: 0.8 },
+      { x: -3.9, y: 1.6, w: 0.9, h: 1.2 },
+      { x: 4.5, y: -2.2, w: 1.4, h: 0.9 },
+      { x: -2.8, y: -2.5, w: 0.8, h: 0.8 }
+    ];
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / HOMOGENEOUS MOVE', C.lime, fs);
+      panel(ctx, g, 'GRAPH / AFFINE 3×3', C.lime, fs);
+
+      const k = Math.min((s.w - 22) / 12, (s.h - 22) / 6.8);
+      const cx = s.x + s.w / 2;
+      const cy = s.y + s.h / 2;
+      const P = (x, y) => ({ x: cx + x * k, y: cy - y * k });
+      const W = (px, py) => ({ x: (px - cx) / k, y: -(py - cy) / k });
+
+      const inside = inRect(sc.pointer, s, 8);
+      let target;
+      if (inside) {
+        const wp = W(
+          clamp(sc.pointer.x, s.x + 8, s.x + s.w - 8),
+          clamp(sc.pointer.y, s.y + 8, s.y + s.h - 8)
+        );
+        target = { x: clamp(wp.x, -5.6, 5.6), y: clamp(wp.y, -3.1, 3.1) };
+      } else {
+        target = { x: 3.5 * Math.cos(sc.t * 0.48), y: 1.8 * Math.sin(sc.t * 0.71) };
+      }
+
+      if (dt > 0) {
+        const dx = target.x - sc.pos.x;
+        const dy = target.y - sc.pos.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 0.03) {
+          const step = Math.min(d, (1.3 + d * 1.1) * dt);
+          sc.pos.x += dx / d * step;
+          sc.pos.y += dy / d * step;
+          const want = Math.atan2(dy, dx);
+          sc.heading = wrapAngle(sc.heading + wrapAngle(want - sc.heading) * (1 - Math.exp(-dt * 5)));
+        }
+        sc.trail.push({ x: sc.pos.x, y: sc.pos.y });
+        while (sc.trail.length > 95) sc.trail.shift();
+      }
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // world grid
+      for (let i = -6; i <= 6; i++) {
+        const a = P(i, -3.4);
+        const b = P(i, 3.4);
+        line(ctx, a.x, a.y, b.x, b.y, i === 0 ? 'rgba(148,163,184,.18)' : 'rgba(148,163,184,.065)', 1);
+      }
+      for (let j = -3; j <= 3; j++) {
+        const a = P(-6, j);
+        const b = P(6, j);
+        line(ctx, a.x, a.y, b.x, b.y, j === 0 ? 'rgba(148,163,184,.18)' : 'rgba(148,163,184,.065)', 1);
+      }
+
+      // crates
+      for (const c of crates) {
+        const a = P(c.x - c.w / 2, c.y + c.h / 2);
+        const bw = c.w * k, bh = c.h * k;
+        ctx.save();
+        ctx.fillStyle = 'rgba(148,163,184,.055)';
+        rr(ctx, a.x, a.y, bw, bh, 4);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(148,163,184,.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        line(ctx, a.x + 4, a.y + 4, a.x + bw - 4, a.y + bh - 4, 'rgba(148,163,184,.08)', 1);
+        ctx.restore();
+      }
+
+      // trail
+      if (sc.trail.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(163,230,53,.18)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        sc.trail.forEach((p, i) => {
+          const q = P(p.x, p.y);
+          if (i === 0) ctx.moveTo(q.x, q.y);
+          else ctx.lineTo(q.x, q.y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // translation vector
+      const o = P(0, 0);
+      const pp = P(sc.pos.x, sc.pos.y);
+      line(ctx, o.x, o.y, pp.x, pp.y, 'rgba(163,230,53,.28)', 1.2, [4, 5]);
+      line(ctx, o.x, o.y, P(sc.pos.x, 0).x, P(sc.pos.x, 0).y, 'rgba(148,163,184,.14)', 1, [2, 5]);
+      line(ctx, P(sc.pos.x, 0).x, P(sc.pos.x, 0).y, pp.x, pp.y, 'rgba(148,163,184,.14)', 1, [2, 5]);
+      drawText(ctx, 't', (o.x + pp.x) / 2 - 8, (o.y + pp.y) / 2, {
+        color: C.lime, size: Math.max(8, fs - 1), weight: 700
+      });
+
+      // target
+      const pt = P(target.x, target.y);
+      const pulse = 1 + 0.12 * Math.sin(sc.t * 3.2);
+      ctx.save();
+      ctx.strokeStyle = inside ? 'rgba(163,230,53,.8)' : 'rgba(244,114,182,.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 11 * pulse, 0, TAU);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3, 0, TAU);
+      ctx.fillStyle = inside ? C.lime : C.magenta;
+      ctx.fill();
+      ctx.restore();
+
+      // agent: M = T(pos) · R(heading) · S(1, .72)
+      const Mworld = M3.chain(
+        M3.translate(sc.pos.x, sc.pos.y),
+        M3.rot(sc.heading),
+        M3.scale(1, 0.72)
+      );
+      const base = [k, 0, cx, 0, -k, cy, 0, 0, 1];
+      const screenM = M3.mul(base, Mworld);
+
+      ctx.save();
+      useMatrix(ctx, screenM);
+      shipPath(ctx, 1);
+      ctx.fillStyle = 'rgba(163,230,53,.16)';
+      ctx.fill();
+      ctx.strokeStyle = C.lime;
+      ctx.lineWidth = 1.6 / k;
+      ctx.shadowColor = C.lime;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+
+      const flame = 0.2 + 0.14 * Math.sin(sc.t * 11);
+      ctx.beginPath();
+      ctx.moveTo(-0.42, 0);
+      ctx.lineTo(-0.64 - flame, 0.14);
+      ctx.lineTo(-0.64 - flame, -0.14);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(251,191,36,.75)';
+      ctx.fill();
+      ctx.restore();
+
+      // local x-axis
+      const xd = { x: Math.cos(sc.heading), y: Math.sin(sc.heading) };
+      const lp0 = P(sc.pos.x, sc.pos.y);
+      const lp1 = P(sc.pos.x + xd.x * 0.75, sc.pos.y + xd.y * 0.75);
+      arrow(ctx, lp0.x, lp0.y, lp1.x, lp1.y, 'rgba(34,211,238,.7)', 1.1, 4);
+      dot(ctx, pp.x, pp.y, 2.6, C.lime, 8);
+
+      ctx.restore();
+
+      pill(ctx, s.x + 10, s.y + 28, 142, 46, 'rgba(148,163,184,.13)');
+      const rows = [
+        ['tx', fmt(sc.pos.x), C.lime],
+        ['ty', fmt(sc.pos.y), C.lime],
+        ['θ', Math.round(toDeg(sc.heading)) + '°', C.cyan]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 140, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+      drawText(ctx, 'T(t) · R(θ)', s.x + s.w - 12, s.y + 32, {
+        color: 'rgba(163,230,53,.65)', size: Math.max(8, fs - 2), weight: 700, align: 'right'
+      });
+
+      // graph
+      const m = M3.chain(M3.translate(sc.pos.x, sc.pos.y), M3.rot(sc.heading));
+      const cell = clamp(g.w / 5.2, 18, 29);
+      const mw = 3 * cell + 20;
+      const mx = g.x + (g.w - mw) / 2;
+      const my = g.y + 46;
+      drawText(ctx, 'ROTATE + MOVE IN ONE MULTIPLY', g.x + 12, g.y + 32, {
+        color: C.dim, size: Math.max(7, fs - 2), weight: 600
+      });
+      matrixBox(ctx, mx, my, 3, 3, [
+        fmt(m[0]), fmt(m[1]), fmt(m[2]),
+        fmt(m[3]), fmt(m[4]), fmt(m[5]),
+        fmt(m[6]), fmt(m[7]), fmt(m[8])
+      ], {
+        cell, fs: Math.max(7, cell * 0.31), accent: C.cyan, color: C.text,
+        tint: (r, c) => c === 2 ? C.lime : (r === 2 ? C.dim : null)
+      });
+      drawText(ctx, 'p′ = M · (x, y, 1)', g.x + g.w / 2, my + 3 * cell + 18, {
+        color: '#a9d9e9', size: Math.max(7, fs - 2), align: 'center'
+      });
+
+      const plotTop = my + 3 * cell + 30;
+      if (g.h > plotTop - g.y + 44) {
+        const pw = g.w - 30;
+        const ph = g.y + g.h - 12 - plotTop;
+        const pcx = g.x + g.w / 2;
+        const pcy = plotTop + ph / 2;
+        const gk = Math.min(pw / 13, ph / 8);
+        const GP = (x, y) => ({ x: pcx + x * gk, y: pcy - y * gk });
+        const go = GP(0, 0);
+        line(ctx, pcx - pw / 2, pcy, pcx + pw / 2, pcy, 'rgba(148,163,184,.12)', 1);
+        line(ctx, pcx, plotTop, pcx, plotTop + ph, 'rgba(148,163,184,.12)', 1);
+
+        // original unit square
+        ctx.save();
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = 'rgba(148,163,184,.2)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(go.x, go.y - gk, gk, gk);
+        ctx.restore();
+
+        // transformed square
+        const corners = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => {
+          const q = M3.apply(m, x, y);
+          return GP(q.x, q.y);
+        });
+        ctx.save();
+        ctx.beginPath();
+        corners.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(163,230,53,.1)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(163,230,53,.65)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.restore();
+
+        const tp = GP(m[2], m[5]);
+        arrow(ctx, go.x, go.y, tp.x, tp.y, 'rgba(251,191,36,.65)', 1.2, 5);
+        const originStart = GP(m[2], 0);
+        line(ctx, originStart.x, originStart.y, tp.x, tp.y, 'rgba(148,163,184,.16)', 1, [2, 4]);
+        dot(ctx, tp.x, tp.y, 2.8, C.lime, 8);
+      }
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 04 — ORDER OF COMPOSITION
+     ============================================================ */
+  builders.order = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 2.2;
+    sc.order = 0;
+    sc.phase = 0;
+    sc.point = { x: 1.6, y: 0.9 };
+    enablePointer(sc);
+
+    const btn = document.getElementById('order-swap');
+    const sync = () => {
+      if (!btn) return;
+      btn.textContent = sc.order ? 'Order: R · T' : 'Order: T · R';
+      btn.setAttribute('aria-pressed', String(sc.order === 1));
+    };
+    if (btn) btn.addEventListener('click', () => {
+      sc.order = 1 - sc.order;
+      sc.phase = 0;
+      sync();
+      redraw = true;
+    });
+    sync();
+
+    const polyPath = (ctx, pts) => {
+      ctx.beginPath();
+      pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    };
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / TWO ORDERS', C.amber, fs);
+      panel(ctx, g, 'GRAPH / ORDER ERROR', C.amber, fs);
+
+      const refK = Math.min((s.w - 16) / 10, (s.h - 16) / 8.4);
+      const refCx = s.x + s.w / 2;
+      const refCy = s.y + s.h / 2;
+      const W = (px, py) => ({ x: (px - refCx) / refK, y: -(py - refCy) / refK });
+
+      if (inRect(sc.pointer, s, 8)) {
+        const wp = W(sc.pointer.x, sc.pointer.y);
+        sc.point.x = clamp(wp.x, -2.2, 2.2);
+        sc.point.y = clamp(wp.y, -1.6, 1.6);
+      } else {
+        sc.point.x = 1.75 * Math.cos(sc.t * 0.38);
+        sc.point.y = 1.1 * Math.sin(sc.t * 0.61);
+      }
+      if (dt > 0) {
+        sc.phase = (sc.phase + dt / 2.6) % 1;
+      }
+
+      const theta = (sc.t * 0.55) % TAU;
+      const R = M3.rot(theta);
+      const T = { x: 1.8, y: 0.8 };
+      const p = sc.point;
+      const rp = M3.apply(R, p.x, p.y);
+      const pt = { x: p.x + T.x, y: p.y + T.y };
+      const rpt = M3.apply(R, pt.x, pt.y);
+      const A = rp;
+      const B = rpt;
+      const activeA = sc.order === 0;
+      const accentA = C.amber;
+      const accentB = C.cyan;
+
+      // frame the action so both paths stay large and legible
+      const minX = Math.min(0, T.x, p.x, rp.x, pt.x, A.x, B.x);
+      const maxX = Math.max(0, T.x, p.x, rp.x, pt.x, A.x, B.x);
+      const minY = Math.min(0, T.y, p.y, rp.y, pt.y, A.y, B.y);
+      const maxY = Math.max(0, T.y, p.y, rp.y, pt.y, A.y, B.y);
+      const spanX = Math.max(4.2, maxX - minX) + 1.3;
+      const spanY = Math.max(3.6, maxY - minY) + 1.3;
+      const k = Math.min((s.w - 14) / spanX, (s.h - 14) / spanY);
+      const mx = (minX + maxX) / 2;
+      const my = (minY + maxY) / 2;
+      const cx = s.x + s.w / 2 - mx * k;
+      const cy = s.y + s.h / 2 + my * k;
+      const P = (x, y) => ({ x: cx + x * k, y: cy - y * k });
+
+      const arc = (start, ang) => {
+        const out = [];
+        const steps = 30;
+        for (let i = 0; i <= steps; i++) {
+          const q = M3.apply(M3.rot(ang * i / steps), start.x, start.y);
+          out.push(P(q.x, q.y));
+        }
+        return out;
+      };
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      for (let i = -10; i <= 10; i++) {
+        const a = P(i, -10);
+        const b = P(i, 10);
+        line(ctx, a.x, a.y, b.x, b.y, i === 0 ? 'rgba(148,163,184,.17)' : 'rgba(148,163,184,.055)', 1);
+      }
+      for (let j = -10; j <= 10; j++) {
+        const a = P(-10, j);
+        const b = P(10, j);
+        line(ctx, a.x, a.y, b.x, b.y, j === 0 ? 'rgba(148,163,184,.17)' : 'rgba(148,163,184,.055)', 1);
+      }
+
+      // translation legend
+      const o = P(0, 0);
+      const tEnd = P(T.x, T.y);
+      arrow(ctx, o.x, o.y, tEnd.x, tEnd.y, 'rgba(148,163,184,.24)', 1, 4);
+      drawText(ctx, 't', tEnd.x + 7, tEnd.y + 3, { color: C.dim, size: Math.max(7, fs - 2) });
+
+      // path A: rotate then translate
+      const arcA = arc(p, theta);
+      polyPath(ctx, arcA);
+      ctx.save();
+      ctx.strokeStyle = activeA ? 'rgba(251,191,36,.68)' : 'rgba(251,191,36,.2)';
+      ctx.lineWidth = activeA ? 1.8 : 1;
+      ctx.setLineDash(activeA ? [] : [3, 5]);
+      ctx.stroke();
+      ctx.restore();
+      line(ctx, P(rp.x, rp.y).x, P(rp.x, rp.y).y, P(A.x, A.y).x, P(A.x, A.y).y,
+        activeA ? 'rgba(251,191,36,.62)' : 'rgba(251,191,36,.2)', activeA ? 1.8 : 1, activeA ? null : [3, 5]);
+
+      // path B: translate then rotate
+      line(ctx, P(p.x, p.y).x, P(p.x, p.y).y, P(pt.x, pt.y).x, P(pt.x, pt.y).y,
+        activeA ? 'rgba(34,211,238,.2)' : 'rgba(34,211,238,.62)', activeA ? 1 : 1.8, activeA ? [3, 5] : null);
+      const arcB = arc(pt, theta);
+      polyPath(ctx, arcB);
+      ctx.save();
+      ctx.strokeStyle = activeA ? 'rgba(34,211,238,.2)' : 'rgba(34,211,238,.68)';
+      ctx.lineWidth = activeA ? 1 : 1.8;
+      ctx.setLineDash(activeA ? [3, 5] : []);
+      ctx.stroke();
+      ctx.restore();
+
+      // separation
+      const pa = P(A.x, A.y);
+      const pb = P(B.x, B.y);
+      line(ctx, pa.x, pa.y, pb.x, pb.y, 'rgba(244,114,182,.65)', 1.2, [3, 4]);
+      const sep = Math.hypot(A.x - B.x, A.y - B.y);
+
+      // final ships
+      const base = [k, 0, cx, 0, -k, cy, 0, 0, 1];
+      const drawResult = (pos, color, active, tag, above) => {
+        const Mworld = M3.mul(M3.translate(pos.x, pos.y), R);
+        ctx.save();
+        ctx.globalAlpha = active ? 1 : .42;
+        useMatrix(ctx, base);
+        useMatrix(ctx, Mworld);
+        shipPath(ctx, .42);
+        ctx.fillStyle = rgba(color, .16);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5 / k;
+        if (active) {
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 9;
+        }
+        ctx.stroke();
+        ctx.restore();
+        const sp = P(pos.x, pos.y);
+        drawText(ctx, tag, sp.x, sp.y + (above ? -16 : 23), {
+          color, size: Math.max(7, fs - 2), weight: 700, align: 'center',
+          alpha: active ? 1 : .5
+        });
+      };
+      drawResult(A, accentA, activeA, 'T · R', true);
+      drawResult(B, accentB, !activeA, 'R · T', false);
+
+      // base point
+      const bp = P(p.x, p.y);
+      dot(ctx, bp.x, bp.y, 3, C.text, 8);
+      drawText(ctx, 'p', bp.x + 7, bp.y - 7, { color: C.muted, size: Math.max(7, fs - 2) });
+
+      // comet along selected path
+      const u = sc.phase;
+      let cp;
+      if (sc.order === 0) {
+        if (u < .5) {
+          const q = M3.apply(M3.rot(theta * (u * 2)), p.x, p.y);
+          cp = P(q.x, q.y);
+        } else {
+          cp = P(rp.x + T.x * (u * 2 - 1), rp.y + T.y * (u * 2 - 1));
+        }
+      } else {
+        if (u < .5) {
+          cp = P(p.x + T.x * (u * 2), p.y + T.y * (u * 2));
+        } else {
+          const q = M3.apply(M3.rot(theta * (u * 2 - 1)), pt.x, pt.y);
+          cp = P(q.x, q.y);
+        }
+      }
+      dot(ctx, cp.x, cp.y, 3.6, sc.order === 0 ? C.amber : C.cyan, 12);
+
+      // readout
+      pill(ctx, s.x + 10, s.y + 28, 152, 48, 'rgba(148,163,184,.13)');
+      const rows = [
+        ['θ', Math.round(toDeg(theta)) + '°', C.lime],
+        ['|A − B|', fmt(sep), C.magenta],
+        ['order', sc.order === 0 ? 'T · R' : 'R · T', C.amber]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 152, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+
+      ctx.restore();
+
+      // graph
+      const pr = plotRect(g, 34, 14, 34, 40);
+      const X = (a) => pr.x + a / TAU * pr.w;
+      const Y = (v) => pr.y + (1 - v) * pr.h;
+      for (let i = 0; i <= 4; i++) {
+        const a = i * Math.PI / 2;
+        line(ctx, X(a), pr.y, X(a), pr.y + pr.h, 'rgba(148,163,184,.07)', 1);
+        const labels = ['0', 'π/2', 'π', '3π/2', '2π'];
+        if (i === 0 || i === 2 || i === 4) {
+          drawText(ctx, labels[i], X(a), pr.y + pr.h + 14, {
+            color: C.dim, size: Math.max(7, fs - 2), align: 'center'
+          });
+        }
+      }
+      [0, .5, 1].forEach((v) => {
+        line(ctx, pr.x, Y(v), pr.x + pr.w, Y(v), v === 0 ? 'rgba(148,163,184,.24)' : 'rgba(148,163,184,.07)', 1, v === 0 ? null : [3, 5]);
+        drawText(ctx, String(v), pr.x - 7, Y(v) + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+
+      ctx.save();
+      ctx.strokeStyle = C.amber;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = C.amber;
+      ctx.shadowBlur = 7;
+      ctx.beginPath();
+      for (let i = 0; i <= 160; i++) {
+        const a = i / 160 * TAU;
+        const v = Math.abs(Math.sin(a / 2));
+        const x = X(a), y = Y(v);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      const cv = Math.abs(Math.sin(theta / 2));
+      line(ctx, X(theta), pr.y, X(theta), pr.y + pr.h, 'rgba(163,230,53,.35)', 1, [3, 4]);
+      dot(ctx, X(theta), Y(cv), 4, C.lime, 10);
+
+      drawText(ctx, 'θ', pr.x + pr.w, pr.y + pr.h + 14, {
+        color: C.dim, size: Math.max(7, fs - 2), align: 'right'
+      });
+      drawText(ctx, 'gap = 2|t| · sin(θ/2)', g.x + g.w - 12, g.y + 18, {
+        color: 'rgba(251,191,36,.65)', size: Math.max(7, fs - 2), weight: 600, align: 'right'
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 05 — CAMERA / VIEW SPACE
+     ============================================================ */
+  builders.camera = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 3.8;
+    enablePointer(sc);
+
+    const beacons = [
+      { x: 2.4, y: 1.1 }, { x: -2.1, y: 2.4 }, { x: 4.2, y: -1.7 },
+      { x: -3.8, y: -1.2 }, { x: 0.4, y: -2.6 }, { x: 3.1, y: 2.6 },
+      { x: -4.9, y: 0.9 }, { x: 1.2, y: -0.6 }, { x: 5.1, y: 1.9 },
+      { x: -1.5, y: -2.9 }, { x: -0.8, y: 0.4 }, { x: 4.7, y: 0.2 }
+    ];
+
+    const blocks = [
+      { x: 2.0, y: 2.1, w: 1.2, h: 0.7 },
+      { x: -2.8, y: 1.4, w: 1.5, h: 0.9 },
+      { x: 4.0, y: -2.4, w: 1.1, h: 1.2 },
+      { x: -4.3, y: -0.7, w: 0.9, h: 1.0 },
+      { x: 0.7, y: 1.9, w: 0.8, h: 0.8 }
+    ];
+
+    const FOV = Math.PI * 0.54;
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / WORLD + CAMERA', C.violet, fs);
+      panel(ctx, g, 'GRAPH / VIEW SPACE', C.violet, fs);
+
+      const k = Math.min((s.w - 22) / 14, (s.h - 22) / 8);
+      const cx = s.x + s.w / 2;
+      const cy = s.y + s.h / 2;
+      const P = (x, y) => ({ x: cx + x * k, y: cy - y * k });
+      const W = (px, py) => ({ x: (px - cx) / k, y: -(py - cy) / k });
+
+      const inside = inRect(sc.pointer, s, 8);
+      let cam;
+      if (inside) {
+        const wp = W(sc.pointer.x, sc.pointer.y);
+        cam = {
+          x: clamp(wp.x, -5.9, 5.9),
+          y: clamp(wp.y, -3.2, 3.2)
+        };
+      } else {
+        cam = {
+          x: 4.3 * Math.cos(sc.t * 0.28),
+          y: 2.2 * Math.sin(sc.t * 0.42)
+        };
+      }
+
+      let dx = -cam.x, dy = -cam.y;
+      if (Math.hypot(dx, dy) < .25) { dx = 1; dy = 0; }
+      const ang = Math.atan2(dy, dx);
+      const V = M3.chain(M3.rot(-ang), M3.translate(-cam.x, -cam.y));
+      const tanF = Math.tan(FOV / 2);
+
+      const visible = (b) => {
+        const vp = M3.apply(V, b.x, b.y);
+        return vp.x > 0 && vp.x < 7.2 && Math.abs(vp.y) < vp.x * tanF + .25;
+      };
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // grid
+      for (let i = -7; i <= 7; i++) {
+        const a = P(i, -4);
+        const b = P(i, 4);
+        line(ctx, a.x, a.y, b.x, b.y, i === 0 ? 'rgba(148,163,184,.16)' : 'rgba(148,163,184,.055)', 1);
+      }
+      for (let j = -3; j <= 3; j++) {
+        const a = P(-7, j);
+        const b = P(7, j);
+        line(ctx, a.x, a.y, b.x, b.y, j === 0 ? 'rgba(148,163,184,.16)' : 'rgba(148,163,184,.055)', 1);
+      }
+
+      // blocks
+      for (const b of blocks) {
+        const a = P(b.x - b.w / 2, b.y + b.h / 2);
+        ctx.save();
+        ctx.fillStyle = 'rgba(167,139,250,.045)';
+        rr(ctx, a.x, a.y, b.w * k, b.h * k, 4);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(167,139,250,.16)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // frustum
+      const dir = { x: Math.cos(ang), y: Math.sin(ang) };
+      const hw = Math.atan2(tanF, 1);
+      const f1 = { x: Math.cos(ang - hw), y: Math.sin(ang - hw) };
+      const f2 = { x: Math.cos(ang + hw), y: Math.sin(ang + hw) };
+      const c0 = P(cam.x, cam.y);
+      const r1 = P(cam.x + f1.x * 6.6, cam.y + f1.y * 6.6);
+      const r2 = P(cam.x + f2.x * 6.6, cam.y + f2.y * 6.6);
+      line(ctx, c0.x, c0.y, r1.x, r1.y, 'rgba(167,139,250,.35)', 1, [4, 5]);
+      line(ctx, c0.x, c0.y, r2.x, r2.y, 'rgba(167,139,250,.35)', 1, [4, 5]);
+      ctx.save();
+      ctx.fillStyle = 'rgba(167,139,250,.055)';
+      ctx.beginPath();
+      ctx.moveTo(c0.x, c0.y);
+      const steps = 24;
+      for (let i = 0; i <= steps; i++) {
+        const a = ang - hw + (2 * hw) * i / steps;
+        const q = P(cam.x + Math.cos(a) * 6.6, cam.y + Math.sin(a) * 6.6);
+        ctx.lineTo(q.x, q.y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // beacons
+      for (const b of beacons) {
+        const q = P(b.x, b.y);
+        const on = visible(b);
+        if (on) {
+          line(ctx, c0.x, c0.y, q.x, q.y, 'rgba(167,139,250,.14)', 1, [2, 5]);
+          dot(ctx, q.x, q.y, 4.2, C.violet, 14);
+        } else {
+          dot(ctx, q.x, q.y, 2.3, 'rgba(148,163,184,.28)', 4);
+        }
+        ctx.save();
+        ctx.strokeStyle = on ? 'rgba(167,139,250,.65)' : 'rgba(148,163,184,.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, on ? 8 : 5, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // camera body
+      const tip = P(cam.x + dir.x * 0.72, cam.y + dir.y * 0.72);
+      const back = P(cam.x - dir.x * 0.42, cam.y - dir.y * 0.42);
+      const l = P(cam.x - dir.y * 0.34, cam.y + dir.x * 0.34);
+      const r = P(cam.x + dir.y * 0.34, cam.y - dir.x * 0.34);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(tip.x, tip.y);
+      ctx.lineTo(l.x, l.y);
+      ctx.lineTo(back.x, back.y);
+      ctx.lineTo(r.x, r.y);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(167,139,250,.28)';
+      ctx.fill();
+      ctx.strokeStyle = C.violet;
+      ctx.lineWidth = 1.4;
+      ctx.shadowColor = C.violet;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
+      dot(ctx, c0.x, c0.y, 2.8, C.violet, 8);
+
+      ctx.restore();
+
+      pill(ctx, s.x + 10, s.y + 28, 142, 48, 'rgba(148,163,184,.13)');
+      const rows = [
+        ['px', fmt(cam.x), C.violet],
+        ['py', fmt(cam.y), C.violet],
+        ['θ', Math.round(toDeg(ang)) + '°', C.cyan]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 142, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+      drawText(ctx, 'R(−θ) · T(−p)', s.x + s.w - 12, s.y + 32, {
+        color: 'rgba(167,139,250,.68)', size: Math.max(8, fs - 2), weight: 700, align: 'right'
+      });
+
+      // graph
+      const showMat = g.h >= 235;
+      const pr = plotRect(g, 30, 14, 34, showMat ? 82 : 40);
+      const gcx = pr.x + pr.w / 2;
+      const gcy = pr.y + pr.h / 2;
+      const gx = Math.min(pr.w / 13.5, pr.h / 7.2);
+      const GP = (x, y) => ({ x: gcx + x * gx, y: gcy - y * gx });
+
+      // view-space grid
+      for (let i = -6; i <= 6; i += 1.5) {
+        const a = GP(i, -3.4);
+        const b = GP(i, 3.4);
+        line(ctx, a.x, a.y, b.x, b.y, 'rgba(148,163,184,.05)', 1);
+      }
+      for (let j = -3; j <= 3; j += 1.5) {
+        const a = GP(-6.5, j);
+        const b = GP(6.5, j);
+        line(ctx, a.x, a.y, b.x, b.y, 'rgba(148,163,184,.05)', 1);
+      }
+      const go = GP(0, 0);
+      line(ctx, pr.x, gcy, pr.x + pr.w, gcy, 'rgba(148,163,184,.16)', 1);
+      line(ctx, gcx, pr.y, gcx, pr.y + pr.h, 'rgba(148,163,184,.16)', 1);
+
+      // fov wedge
+      const w1 = GP(6.4 * Math.cos(-FOV / 2), 6.4 * Math.sin(-FOV / 2));
+      const w2 = GP(6.4 * Math.cos(FOV / 2), 6.4 * Math.sin(FOV / 2));
+      line(ctx, go.x, go.y, w1.x, w1.y, 'rgba(167,139,250,.3)', 1, [4, 5]);
+      line(ctx, go.x, go.y, w2.x, w2.y, 'rgba(167,139,250,.3)', 1, [4, 5]);
+      ctx.save();
+      ctx.fillStyle = 'rgba(167,139,250,.045)';
+      ctx.beginPath();
+      ctx.moveTo(go.x, go.y);
+      ctx.arc(go.x, go.y, 6.4 * gx, -FOV / 2, FOV / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // view-space beacons
+      for (const b of beacons) {
+        const vp = M3.apply(V, b.x, b.y);
+        if (vp.x < -1 || vp.x > 7 || Math.abs(vp.y) > 4) continue;
+        const q = GP(vp.x, vp.y);
+        const on = visible(b);
+        dot(ctx, q.x, q.y, on ? 3.4 : 2, on ? C.violet : 'rgba(148,163,184,.3)', on ? 10 : 3);
+      }
+
+      // camera at origin
+      const ct = GP(.75, 0);
+      arrow(ctx, go.x, go.y, ct.x, ct.y, C.violet, 1.4, 5);
+      dot(ctx, go.x, go.y, 3.4, C.violet, 9);
+      drawText(ctx, 'camera', go.x, go.y + 17, {
+        color: C.violet, size: Math.max(7, fs - 2), align: 'center', weight: 700
+      });
+      drawText(ctx, '+x', GP(6, 0).x + 3, gcy + 10, { color: C.dim, size: Math.max(7, fs - 2) });
+      drawText(ctx, '+y', gcx + 4, pr.y + 8, { color: C.dim, size: Math.max(7, fs - 2) });
+
+      if (showMat) {
+        const cell = 14;
+        const mw = 3 * cell + 20;
+        const mx = g.x + (g.w - mw) / 2;
+        const my = g.y + g.h - 58;
+        drawText(ctx, 'V', mx - 17, my + 15, { color: C.violet, size: Math.max(7, fs - 2), weight: 700 });
+        matrixBox(ctx, mx, my, 3, 3, [
+          fmt(V[0]), fmt(V[1]), fmt(V[2]),
+          fmt(V[3]), fmt(V[4]), fmt(V[5]),
+          '0', '0', '1'
+        ], {
+          cell, fs: 6.8, accent: C.violet, color: C.text,
+          tint: (r, c) => c === 2 ? C.cyan : null
+        });
+      }
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 06 — SHEAR + SQUASH
+     ============================================================ */
+  builders.shear = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 2.9;
+    sc.k = 0.45;
+    sc.sy = 1;
+
+    const kEl = document.getElementById('shear-k');
+    const syEl = document.getElementById('shear-sy');
+    const kVal = document.getElementById('shear-k-val');
+    const syVal = document.getElementById('shear-sy-val');
+
+    if (kEl) kEl.addEventListener('input', () => {
+      sc.k = (+kEl.value) / 100;
+      if (kVal) kVal.textContent = sc.k.toFixed(2);
+      redraw = true;
+    });
+    if (syEl) syEl.addEventListener('input', () => {
+      sc.sy = (+syEl.value) / 100;
+      if (syVal) syVal.textContent = Math.round(sc.sy * 100) + '%';
+      redraw = true;
+    });
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / SQUASH + LEAN', C.red, fs);
+      panel(ctx, g, 'GRAPH / SHEAR + AREA', C.red, fs);
+
+      const m = M3.mul(M3.shear(sc.k, 0), M3.scale(1, sc.sy));
+      const det = M3.det(m);
+      const size = Math.min(s.w, s.h) * 0.205;
+      const bob = Math.sin(sc.t * 1.9) * size * 0.055;
+      const cx = s.x + s.w * 0.5;
+      const cy = s.y + s.h * 0.62 + bob;
+      const floorY = s.y + s.h * 0.86;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // backdrop grid
+      for (let i = -5; i <= 5; i++) {
+        line(ctx, s.x, cy + i * size * .5, s.x + s.w, cy + i * size * .5, 'rgba(148,163,184,.045)', 1);
+        line(ctx, cx + i * size * .5, s.y, cx + i * size * .5, s.y + s.h, 'rgba(148,163,184,.045)', 1);
+      }
+      line(ctx, s.x, floorY, s.x + s.w, floorY, 'rgba(148,163,184,.18)', 1);
+
+      // shadow
+      const shadowW = size * (1.25 + Math.abs(sc.k) * .25) * clamp(sc.sy, .7, 1.25);
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, floorY, shadowW, size * .12, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      // ghost: original transform
+      const ghost = M3.mul(M3.translate(cx, cy), M3.scale(size, -size));
+      ctx.save();
+      useMatrix(ctx, ghost);
+      rr(ctx, -1, -1, 2, 2, .36);
+      ctx.strokeStyle = 'rgba(148,163,184,.24)';
+      ctx.lineWidth = 1.4 / size;
+      ctx.setLineDash([7 / size, 5 / size]);
+      ctx.stroke();
+      ctx.restore();
+
+      // transformed character
+      const screenM = M3.chain(M3.translate(cx, cy), M3.scale(size, -size), m);
+      ctx.save();
+      useMatrix(ctx, screenM);
+
+      rr(ctx, -1, -1, 2, 2, .36);
+      ctx.fillStyle = 'rgba(251,113,133,.16)';
+      ctx.fill();
+      ctx.strokeStyle = C.red;
+      ctx.lineWidth = 1.8 / size;
+      ctx.shadowColor = C.red;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+
+      // belly
+      rr(ctx, -.52, -.52, 1.04, .9, .26);
+      ctx.fillStyle = 'rgba(251,113,133,.1)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(251,113,133,.22)';
+      ctx.lineWidth = 1 / size;
+      ctx.stroke();
+
+      // eyes
+      for (const ex of [-.34, .34]) {
+        ctx.beginPath();
+        ctx.arc(ex, .36, .13, 0, TAU);
+        ctx.fillStyle = '#eafcff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ex + .025, .35, .055, 0, TAU);
+        ctx.fillStyle = '#0a1120';
+        ctx.fill();
+      }
+
+      // mouth
+      ctx.beginPath();
+      ctx.arc(0, .1, .2, .25, Math.PI - .25);
+      ctx.strokeStyle = 'rgba(234,252,255,.6)';
+      ctx.lineWidth = 1.2 / size;
+      ctx.stroke();
+
+      // antenna
+      line(ctx, .06, 1, .12, 1.28, 'rgba(251,113,133,.75)', 1.4 / size);
+      ctx.beginPath();
+      ctx.arc(.12, 1.32, .09, 0, TAU);
+      ctx.fillStyle = C.amber;
+      ctx.fill();
+
+      // arms
+      line(ctx, -.98, .05, -1.2, -.18, 'rgba(251,113,133,.7)', 2.2 / size);
+      line(ctx, .98, .05, 1.2, -.18, 'rgba(251,113,133,.7)', 2.2 / size);
+      ctx.restore();
+
+      // local axes
+      drawAxes(ctx, screenM, 26, 'rgba(251,113,133,.55)');
+
+      // transformed bounding box
+      const boxPts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => {
+        const q = M3.apply(m, x, y);
+        return { x: cx + q.x * size, y: cy - q.y * size };
+      });
+      ctx.save();
+      ctx.beginPath();
+      boxPts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(251,191,36,.32)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke();
+      ctx.restore();
+
+      // shear direction
+      const arrowY = cy - size * 0.72;
+      arrow(ctx, cx - size * .7, arrowY, cx + (sc.k * sc.sy) * size * .7 + size * .7, arrowY,
+        'rgba(251,191,36,.4)', 1, 4);
+
+      ctx.restore();
+
+      pill(ctx, s.x + 10, s.y + 28, 132, 46, 'rgba(148,163,184,.13)');
+      const rows = [
+        ['k', sc.k.toFixed(2), C.amber],
+        ['sy', sc.sy.toFixed(2), C.red],
+        ['det', fmt(det), C.lime]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 132, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+      drawText(ctx, 'M = SHEAR · SCALE', s.x + s.w - 12, s.y + 32, {
+        color: 'rgba(251,113,133,.68)', size: Math.max(8, fs - 2), weight: 700, align: 'right'
+      });
+
+      // graph
+      const cell = clamp(g.w / 7, 18, 28);
+      const my = g.y + 44;
+      const mx = g.x + 26;
+      drawText(ctx, 'M', g.x + 12, g.y + 31, { color: C.dim, size: Math.max(7, fs - 2), weight: 700 });
+      matrixBox(ctx, mx, my, 2, 2, [
+        fmt(m[0]), fmt(m[1]),
+        fmt(m[3]), fmt(m[4])
+      ], {
+        cell, fs: Math.max(8, cell * 0.34), accent: C.red, color: C.text
+      });
+      const infoX = mx + 2 * cell + 34;
+      drawText(ctx, 'det', infoX, my + 16, { color: C.dim, size: Math.max(7, fs - 2) });
+      drawText(ctx, fmt(det), infoX, my + 32, { color: C.lime, size: Math.max(9, fs), weight: 700 });
+      drawText(ctx, 'area preserved by shear', infoX, my + 50, {
+        color: 'rgba(148,163,184,.55)', size: Math.max(6.5, fs - 3)
+      });
+
+      const plotTop = my + 2 * cell + 17;
+      const plotBottom = g.y + g.h - 30;
+      if (plotBottom - plotTop > 50) {
+        const gcx = g.x + g.w / 2;
+        const gcy = (plotTop + plotBottom) / 2;
+        const gu = Math.min(g.w * .29, (plotBottom - plotTop) * .38);
+        line(ctx, g.x + 12, gcy, g.x + g.w - 12, gcy, 'rgba(148,163,184,.12)', 1);
+        line(ctx, gcx, plotTop, gcx, plotBottom, 'rgba(148,163,184,.12)', 1);
+
+        // original square
+        ctx.save();
+        ctx.setLineDash([3, 4]);
+        ctx.strokeStyle = 'rgba(148,163,184,.22)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(gcx, gcy - gu, gu, gu);
+        ctx.restore();
+
+        // transformed circle
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i <= 72; i++) {
+          const a = i / 72 * TAU;
+          const q = M3.apply(m, Math.cos(a), Math.sin(a));
+          const x = gcx + q.x * gu;
+          const y = gcy - q.y * gu;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(251,113,133,.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(251,113,133,.45)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 5]);
+        ctx.stroke();
+        ctx.restore();
+
+        // transformed square
+        const pts = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => {
+          const q = M3.apply(m, x, y);
+          return { x: gcx + q.x * gu, y: gcy - q.y * gu };
+        });
+        ctx.save();
+        ctx.beginPath();
+        pts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(251,113,133,.13)';
+        ctx.fill();
+        ctx.strokeStyle = C.red;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        const e1 = M3.apply(m, 1, 0);
+        const e2 = M3.apply(m, 0, 1);
+        arrow(ctx, gcx, gcy, gcx + e1.x * gu, gcy - e1.y * gu, C.amber, 1.3, 5);
+        arrow(ctx, gcx, gcy, gcx + e2.x * gu, gcy - e2.y * gu, C.cyan, 1.3, 5);
+      }
+
+      // det bar
+      const bw = g.w * .66;
+      const bx = g.x + (g.w - bw) / 2;
+      const by = g.y + g.h - 14;
+      line(ctx, bx, by, bx + bw, by, 'rgba(148,163,184,.15)', 4);
+      line(ctx, bx, by, bx + bw * clamp(Math.abs(det) / 2, 0, 1), by, rgba(C.lime, .8), 4);
+      drawText(ctx, 'SHEAR KEEPS AREA · SCALE CHANGES IT', bx, by - 7, {
+        color: 'rgba(148,163,184,.5)', size: Math.max(6.5, fs - 3)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 07 — 3D PERSPECTIVE
+     ============================================================ */
+  builders.perspective = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 2.0;
+    sc.yaw = 0.72;
+    sc.pitch = 0.34;
+    sc.dist = 15;
+    sc.fov = 62;
+    sc.hold = 0;
+
+    enableDrag(sc, (dx, dy) => {
+      sc.yaw -= dx * 0.008;
+      sc.pitch = clamp(sc.pitch - dy * 0.006, 0.02, 0.95);
+      sc.hold = 2.6;
+    });
+
+    const fovEl = document.getElementById('fov');
+    const fovVal = document.getElementById('fov-val');
+    if (fovEl) fovEl.addEventListener('input', () => {
+      sc.fov = +fovEl.value;
+      if (fovVal) fovVal.textContent = sc.fov + '°';
+      redraw = true;
+    });
+
+    let seed = 20261027;
+    const rnd = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const palette = [C.cyan, C.violet, C.magenta, C.lime, C.amber];
+    const city = [];
+    const offsets = [
+      [-.5, -.5], [.5, -.5], [.5, .5], [-.5, .5]
+    ];
+
+    for (let i = -3; i <= 3; i++) {
+      for (let j = -3; j <= 3; j++) {
+        if (i === 0 && j === 0) continue;
+        const x = i * 2.35 + (rnd() - .5) * .7;
+        const z = j * 2.35 + (rnd() - .5) * .7;
+        if (Math.hypot(x, z) > 9.3) continue;
+        const w = .9 + rnd() * .9;
+        const d = .9 + rnd() * .9;
+        const h = 1.0 + rnd() * 4.8;
+        const color = palette[Math.floor(rnd() * palette.length)];
+        const verts = [];
+        for (let level = 0; level < 2; level++) {
+          const y = level ? h : 0;
+          for (const [ox, oz] of offsets) {
+            verts.push([x + ox * w, y, z + oz * d]);
+          }
+        }
+        city.push({ x, z, w, d, h, color, verts });
+      }
+    }
+
+    const edges = [
+      [0, 1], [1, 2], [2, 3], [3, 0],
+      [4, 5], [5, 6], [6, 7], [7, 4],
+      [0, 4], [1, 5], [2, 6], [3, 7]
+    ];
+    const faces = [
+      [4, 5, 6, 7],
+      [0, 1, 5, 4],
+      [1, 2, 6, 5],
+      [2, 3, 7, 6],
+      [3, 0, 4, 7]
+    ];
+
+    const projPoint = (mvp, v) => {
+      const c = M4.apply(mvp, v[0], v[1], v[2], 1);
+      if (c.w <= 0.08) return null;
+      return { x: c.x / c.w, y: c.y / c.w, z: c.z / c.w, w: c.w };
+    };
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / 3D CITY', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / NDC PROJECTION', C.cyan, fs);
+
+      if (dt > 0) {
+        if (sc.hold > 0) sc.hold -= dt;
+        else sc.yaw += dt * 0.13;
+      }
+
+      const eye = {
+        x: Math.cos(sc.yaw) * Math.cos(sc.pitch) * sc.dist,
+        y: 2.0 + Math.sin(sc.pitch) * sc.dist,
+        z: Math.sin(sc.yaw) * Math.cos(sc.pitch) * sc.dist
+      };
+      const target = { x: 0, y: 1.8, z: 0 };
+      const view = M4.lookAt(eye, target, { x: 0, y: 1, z: 0 });
+      const proj = M4.perspective(toRad(sc.fov), Math.max(.3, s.w / s.h), 0.1, 100);
+      const mvp = M4.mul(proj, view);
+
+      const sx = (p) => s.x + s.w * .5 + p.x * s.w * .46;
+      const sy = (p) => s.y + s.h * .5 - p.y * s.h * .46;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      const glow = ctx.createRadialGradient(
+        s.x + s.w * .5, s.y + s.h * .55, 0,
+        s.x + s.w * .5, s.y + s.h * .55, Math.max(s.w, s.h) * .62
+      );
+      glow.addColorStop(0, 'rgba(34,211,238,.055)');
+      glow.addColorStop(.55, 'rgba(34,211,238,.012)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+
+      // ground
+      const gridLines = [];
+      for (let i = -10; i <= 10; i += 2) {
+        gridLines.push([[-10, 0, i], [10, 0, i]]);
+        gridLines.push([[i, 0, -10], [i, 0, 10]]);
+      }
+      for (const [a, b] of gridLines) {
+        const pa = projPoint(mvp, a);
+        const pb = projPoint(mvp, b);
+        if (!pa || !pb) continue;
+        const major = (Math.abs(a[2]) < .01 || Math.abs(a[0]) < .01);
+        line(ctx, sx(pa), sy(pa), sx(pb), sy(pb),
+          major ? 'rgba(34,211,238,.1)' : 'rgba(148,163,184,.055)', 1);
+      }
+
+      // projected city
+      const faceQueue = [];
+      const points = [];
+      for (const b of city) {
+        const pp = b.verts.map((v) => projPoint(mvp, v));
+        for (const p of pp) if (p) points.push(p);
+        for (const f of faces) {
+          const poly = f.map((i) => pp[i]);
+          if (poly.some((p) => !p)) continue;
+          let dep = 0;
+          for (const p of poly) dep += p.w;
+          dep /= poly.length;
+          faceQueue.push({ poly, dep, color: b.color, top: f === faces[0] });
+        }
+      }
+      faceQueue.sort((a, b) => b.dep - a.dep);
+      for (const f of faceQueue) {
+        const alpha = f.top ? .07 : .028;
+        ctx.save();
+        ctx.beginPath();
+        f.poly.forEach((p, i) => {
+          const x = sx(p), y = sy(p);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = rgba(f.color, alpha);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // edges, slightly brighter when near
+      for (const b of city) {
+        const pp = b.verts.map((v) => projPoint(mvp, v));
+        for (const [ia, ib] of edges) {
+          const pa = pp[ia], pb = pp[ib];
+          if (!pa || !pb) continue;
+          const near = clamp(1 - (pa.w + pb.w) / 42, .18, .82);
+          line(ctx, sx(pa), sy(pa), sx(pb), sy(pb), rgba(b.color, near * .55), near > .55 ? 1.2 : .9);
+        }
+      }
+
+      // central beacon
+      const b0 = projPoint(mvp, [0, 0, 0]);
+      const b1 = projPoint(mvp, [0, 5.4, 0]);
+      if (b0 && b1) {
+        const grad = ctx.createLinearGradient(sx(b0), sy(b0), sx(b1), sy(b1));
+        grad.addColorStop(0, 'rgba(251,191,36,.75)');
+        grad.addColorStop(1, 'rgba(251,191,36,0)');
+        ctx.save();
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.6;
+        ctx.shadowColor = C.amber;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(sx(b0), sy(b0));
+        ctx.lineTo(sx(b1), sy(b1));
+        ctx.stroke();
+        ctx.restore();
+        dot(ctx, sx(b0), sy(b0), 3.2, C.amber, 12);
+      }
+
+      // compass
+      const ccx = s.x + s.w - 34;
+      const ccy = s.y + 42;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ccx, ccy, 15, 0, TAU);
+      ctx.stroke();
+      const ca = -sc.yaw;
+      arrow(ctx, ccx, ccy, ccx + Math.cos(ca) * 13, ccy + Math.sin(ca) * 13, 'rgba(34,211,238,.7)', 1.2, 4);
+      ctx.restore();
+      drawText(ctx, 'N', ccx + 3, ccy - 19, { color: C.dim, size: Math.max(6, fs - 3) });
+
+      ctx.restore();
+
+      // readouts
+      const rows = [
+        ['yaw', Math.round(toDeg(sc.yaw) % 360) + '°', C.cyan],
+        ['pitch', Math.round(toDeg(sc.pitch)) + '°', C.violet],
+        ['fov', sc.fov + '°', C.amber]
+      ];
+      pill(ctx, s.x + 10, s.y + 28, 134, 48, 'rgba(148,163,184,.13)');
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 134, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+      drawText(ctx, 'DRAG TO ORBIT', s.x + 12, s.y + s.h - 12, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(6.5, fs - 3), weight: 600
+      });
+      drawText(ctx, 'P · V · M', s.x + s.w - 12, s.y + 32, {
+        color: 'rgba(34,211,238,.6)', size: Math.max(8, fs - 2), weight: 700, align: 'right'
+      });
+
+      // graph
+      const pr = plotRect(g, 32, 14, 34, 40);
+      const gcx = pr.x + pr.w / 2;
+      const gcy = pr.y + pr.h / 2;
+      const gs = Math.min(pr.w, pr.h) * .42;
+      const GX = (x) => gcx + x * gs;
+      const GY = (y) => gcy - y * gs;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,.16)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(GX(-1), GY(1), gs * 2, gs * 2);
+      ctx.restore();
+      line(ctx, pr.x, gcy, pr.x + pr.w, gcy, 'rgba(148,163,184,.13)', 1);
+      line(ctx, gcx, pr.y, gcx, pr.y + pr.h, 'rgba(148,163,184,.13)', 1);
+      drawText(ctx, '-1', GX(-1) - 2, gcy + 12, { color: C.dim, size: Math.max(6.5, fs - 3), align: 'right' });
+      drawText(ctx, '+1', GX(1) + 2, gcy + 12, { color: C.dim, size: Math.max(6.5, fs - 3) });
+      drawText(ctx, '+1', gcx + 4, GY(1) - 3, { color: C.dim, size: Math.max(6.5, fs - 3) });
+      drawText(ctx, '-1', gcx + 4, GY(-1) + 8, { color: C.dim, size: Math.max(6.5, fs - 3) });
+
+      let wMin = Infinity, wMax = 0, count = 0;
+      for (const p of points) {
+        if (p.x < -1.35 || p.x > 1.35 || p.y < -1.35 || p.y > 1.35) continue;
+        wMin = Math.min(wMin, p.w);
+        wMax = Math.max(wMax, p.w);
+        count++;
+        const a = clamp(1.25 - p.w / 30, .18, .85);
+        dot(ctx, GX(p.x), GY(p.y), p.w < 18 ? 1.8 : 1.2, rgba(C.cyan, a), 4);
+      }
+
+      drawText(ctx, count + ' verts', g.x + g.w - 12, g.y + 18, {
+        color: C.cyan, size: Math.max(7, fs - 2), weight: 700, align: 'right'
+      });
+      drawText(ctx, 'w ' + (count ? fmt(wMin, 1) + '–' + fmt(wMax, 1) : '—'), g.x + g.w - 12, g.y + 31, {
+        color: C.dim, size: Math.max(6.5, fs - 3), align: 'right'
+      });
+      drawText(ctx, 'NDC = CLIP / w', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(34,211,238,.55)', size: Math.max(7, fs - 2), weight: 600
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 08 — HIERARCHY / BONE CHAIN
+     ============================================================ */
+  builders.hierarchy = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 3.1;
+    enablePointer(sc);
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / BONE CHAIN', C.magenta, fs);
+      panel(ctx, g, 'GRAPH / MATRIX CHAIN', C.magenta, fs);
+
+      const U = Math.min(s.w, s.h);
+      const bw = U * 0.20;
+      const bh = U * 0.32;
+      const hr = U * 0.060;
+      const L1 = U * 0.31;
+      const L2 = U * 0.27;
+      const base = { x: s.x + s.w * 0.30, y: s.y + s.h * 0.88 };
+      const sway = Math.sin(sc.t * 0.85) * 0.075;
+
+      const Mbody = M3.mul(M3.translate(base.x, base.y), M3.rot(sway));
+      const shoulderLocal = { x: 0, y: -bh * 0.78 };
+      const S = M3.apply(Mbody, shoulderLocal.x, shoulderLocal.y);
+
+      const inside = inRect(sc.pointer, s, 8);
+      let target;
+      if (inside) {
+        target = {
+          x: clamp(sc.pointer.x, s.x + 8, s.x + s.w - 8),
+          y: clamp(sc.pointer.y, s.y + 8, s.y + s.h - 8)
+        };
+      } else {
+        target = {
+          x: S.x + (L1 + L2) * 0.68 + Math.sin(sc.t * 0.9) * L1 * 0.32,
+          y: S.y - (L1 + L2) * 0.34 + Math.cos(sc.t * 0.7) * L1 * 0.48
+        };
+      }
+
+      const dx = target.x - S.x;
+      const dy = target.y - S.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const maxD = L1 + L2 - 3;
+      const dc = clamp(d, 3, maxD);
+      const phi = Math.atan2(dy, dx);
+      const cosA = clamp((L1 * L1 + dc * dc - L2 * L2) / (2 * L1 * dc), -1, 1);
+      const alpha = Math.acos(cosA);
+      const a1 = phi - alpha;
+      const E = { x: S.x + Math.cos(a1) * L1, y: S.y + Math.sin(a1) * L1 };
+      const Tcl = { x: S.x + Math.cos(phi) * dc, y: S.y + Math.sin(phi) * dc };
+      const a2 = Math.atan2(Tcl.y - E.y, Tcl.x - E.x);
+
+      const local1 = wrapAngle(a1 - sway);
+      const local2 = wrapAngle(a2 - a1);
+      const Mup = M3.chain(Mbody, M3.translate(shoulderLocal.x, shoulderLocal.y), M3.rot(local1));
+      const Mfore = M3.chain(Mup, M3.translate(L1, 0), M3.rot(local2));
+      const Mhand = M3.mul(Mfore, M3.translate(L2, 0));
+      const H = { x: Mhand[2], y: Mhand[5] };
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // floor + grid
+      line(ctx, s.x, base.y + 2, s.x + s.w, base.y + 2, 'rgba(148,163,184,.16)', 1);
+      for (let i = -4; i <= 4; i++) {
+        line(ctx, base.x + i * U * .13, s.y, base.x + i * U * .13, s.y + s.h, 'rgba(148,163,184,.04)', 1);
+      }
+      for (let j = -3; j <= 3; j++) {
+        line(ctx, s.x, base.y + j * U * .12, s.x + s.w, base.y + j * U * .12, 'rgba(148,163,184,.04)', 1);
+      }
+
+      // reach ring
+      ctx.save();
+      ctx.setLineDash([2, 7]);
+      ctx.strokeStyle = 'rgba(244,114,182,.13)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(S.x, S.y, maxD, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+
+      // target
+      const pt = { x: Tcl.x, y: Tcl.y };
+      if (d > maxD) {
+        const raw = { x: target.x, y: target.y };
+        ctx.save();
+        ctx.strokeStyle = 'rgba(251,191,36,.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.arc(raw.x, raw.y, 10, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+        line(ctx, pt.x, pt.y, raw.x, raw.y, 'rgba(251,191,36,.2)', 1, [2, 4]);
+      }
+      ctx.save();
+      ctx.strokeStyle = inside ? 'rgba(244,114,182,.85)' : 'rgba(34,211,238,.65)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 11, 0, TAU);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3, 0, TAU);
+      ctx.fillStyle = inside ? C.magenta : C.cyan;
+      ctx.fill();
+      ctx.restore();
+
+      // target line
+      line(ctx, S.x, S.y, Tcl.x, Tcl.y, 'rgba(231,238,248,.15)', 1, [3, 5]);
+
+      // torso
+      ctx.save();
+      useMatrix(ctx, Mbody);
+      const bodyFill = ctx.createLinearGradient(0, -bh, 0, 0);
+      bodyFill.addColorStop(0, 'rgba(34,211,238,.12)');
+      bodyFill.addColorStop(1, 'rgba(10,17,31,.6)');
+      rr(ctx, -bw / 2, -bh, bw, bh, bw * .16);
+      ctx.fillStyle = bodyFill;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(34,211,238,.35)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      rr(ctx, -bw * .34, -bh * .78, bw * .68, bh * .46, bw * .1);
+      ctx.fillStyle = 'rgba(34,211,238,.05)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(34,211,238,.16)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        line(ctx, -bw * .24, -bh * .66 + i * bh * .1, bw * .24, -bh * .66 + i * bh * .1,
+          'rgba(34,211,238,.18)', 1.2);
+      }
+
+      ctx.beginPath();
+      ctx.arc(0, -bh - hr * .55, hr, 0, TAU);
+      ctx.fillStyle = 'rgba(10,17,31,.92)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(34,211,238,.42)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, -bh - hr * .55, hr * .22, 0, TAU);
+      ctx.fillStyle = C.cyan;
+      ctx.fill();
+      ctx.restore();
+
+      // bones
+      const drawBone = (a, b, width, color) => {
+        line(ctx, a.x, a.y, b.x, b.y, rgba(color, .16), width + 8);
+        line(ctx, a.x, a.y, b.x, b.y, color, width);
+      };
+      drawBone(S, E, 5.4, C.cyan);
+      drawBone(E, H, 4.2, C.magenta);
+
+      // joints
+      dot(ctx, S.x, S.y, 6.2, 'rgba(34,211,238,.85)', 14);
+      dot(ctx, E.x, E.y, 5.2, 'rgba(244,114,182,.9)', 13);
+      dot(ctx, H.x, H.y, 4.2, 'rgba(163,230,53,.9)', 12);
+
+      // local frames
+      drawAxes(ctx, Mup, 22, 'rgba(34,211,238,.7)', true);
+      drawAxes(ctx, Mfore, 18, 'rgba(244,114,182,.7)');
+      drawAxes(ctx, Mhand, 14, 'rgba(163,230,53,.65)');
+
+      // fingers
+      const fxd = { x: Mfore[0], y: Mfore[3] };
+      const fyd = { x: Mfore[1], y: Mfore[4] };
+      const fn = Math.hypot(fxd.x, fxd.y) || 1;
+      const fx = { x: fxd.x / fn, y: fxd.y / fn };
+      const fy = { x: fyd.x / fn, y: fyd.y / fn };
+      line(ctx, H.x, H.y, H.x + fx.x * 11 + fy.x * 6, H.y + fx.y * 11 + fy.y * 6, 'rgba(163,230,53,.75)', 2);
+      line(ctx, H.x, H.y, H.x + fx.x * 11 - fy.x * 6, H.y + fx.y * 11 - fy.y * 6, 'rgba(163,230,53,.75)', 2);
+
+      // world origin axes
+      drawAxes(ctx, Mbody, 20, 'rgba(148,163,184,.28)');
+
+      ctx.restore();
+
+      pill(ctx, s.x + 10, s.y + 28, 146, 48, 'rgba(148,163,184,.13)');
+      const rows = [
+        ['shoulder', Math.round(toDeg(local1)) + '°', C.cyan],
+        ['elbow', Math.round(toDeg(local2)) + '°', C.magenta],
+        ['reach', Math.round(d) + ' / ' + Math.round(maxD), C.lime]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 43 + i * 14;
+        drawText(ctx, row[0], s.x + 20, yy, { color: C.dim, size: Math.max(7, fs - 2) });
+        drawText(ctx, row[1], s.x + 146, yy, { color: row[2], size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      });
+      drawText(ctx, 'BODY · UPPER · FORE', s.x + s.w - 12, s.y + 32, {
+        color: 'rgba(244,114,182,.68)', size: Math.max(8, fs - 2), weight: 700, align: 'right'
+      });
+
+      // graph
+      const compact = g.h < 260;
+      const matRows = compact ? 2 : 3;
+      const cell = compact
+        ? clamp((g.h - 60) / 6, 9, 26)
+        : clamp((g.h - 64) / 9, 8, 30);
+      const mw = 3 * cell + 20;
+      const mx = g.x + g.w - mw - 18;
+      const startY = g.y + 34;
+      const step = matRows * cell + (compact ? 8 : 10);
+      const mats = [
+        ['BODY', Mbody, C.cyan],
+        ['UPPER', Mup, C.magenta],
+        ['FORE', Mfore, C.lime]
+      ];
+      mats.forEach((entry, i) => {
+        const [label, m, col] = entry;
+        const yy = startY + i * step;
+        drawText(ctx, label, g.x + 14, yy + cell * 1.1, {
+          color: col, size: Math.max(6.5, cell * .3), weight: 700
+        });
+        drawText(ctx, compact ? 'affine 2×3' : (i === 0 ? 'world' : 'parent · local'), g.x + 14, yy + cell * 1.1 + 12, {
+          color: 'rgba(148,163,184,.4)', size: Math.max(5.5, cell * .22)
+        });
+        const vals = compact ? [
+          fmt(m[0], 1), fmt(m[1], 1), fmt(m[2], 0),
+          fmt(m[3], 1), fmt(m[4], 1), fmt(m[5], 0)
+        ] : [
+          fmt(m[0], 1), fmt(m[1], 1), fmt(m[2], 0),
+          fmt(m[3], 1), fmt(m[4], 1), fmt(m[5], 0),
+          '0', '0', '1'
+        ];
+        matrixBox(ctx, mx, yy, matRows, 3, vals, {
+          cell,
+          fs: compact ? Math.max(5.6, cell * .36) : Math.max(6.2, cell * .32),
+          accent: col,
+          color: C.text,
+          tint: (r, c) => c === 2 ? col : null
+        });
+      });
+
+      const footY = startY + 3 * step - 4;
+      if (footY + 18 < g.y + g.h) {
+        drawText(ctx, 'WORLD = BODY · UPPER · FORE', g.x + 12, footY + 10, {
+          color: 'rgba(148,163,184,.55)', size: Math.max(6.5, fs - 3), weight: 600
+        });
+        drawText(ctx, 'hand  ' + fmt(H.x, 1) + ', ' + fmt(H.y, 1), g.x + 12, footY + 24, {
+          color: 'rgba(163,230,53,.7)', size: Math.max(6.5, fs - 3)
+        });
+      }
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const sc = e.target.__scene;
+      if (!sc) continue;
+      sc.visible = e.isIntersecting;
+      if (e.isIntersecting) redraw = true;
+    }
+  }, { rootMargin: '140px' });
+
+  const ro = new ResizeObserver((entries) => {
+    for (const e of entries) {
+      const sc = e.target.__scene;
+      if (!sc) continue;
+      const oldW = sc.w, oldH = sc.h;
+      if (!fit(sc)) continue;
+      if (Math.abs(oldW - sc.w) > .5 || Math.abs(oldH - sc.h) > .5) {
+        if (sc.onResize) sc.onResize();
+        redraw = true;
+      }
+    }
+  });
+
+  function init() {
+    document.querySelectorAll('canvas[data-scene]').forEach((canvas) => {
+      const name = canvas.dataset.scene;
+      const build = builders[name];
+      if (!build) return;
+      const sc = build(canvas);
+      canvas.__scene = sc;
+      scenes.push(sc);
+      io.observe(canvas);
+      ro.observe(canvas);
+      fit(sc);
+    });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    paused = reduce;
+    const btn = document.getElementById('pause-btn');
+    const sync = () => {
+      btn.setAttribute('aria-pressed', String(paused));
+      btn.textContent = paused ? 'Play motion' : 'Pause motion';
+    };
+    sync();
+    btn.addEventListener('click', () => {
+      paused = !paused;
+      last = performance.now();
+      redraw = true;
+      sync();
+    });
+
+    const reveal = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          reveal.unobserve(e.target);
+        }
+      }
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach((el) => reveal.observe(el));
+
+    window.addEventListener('resize', () => {
+      for (const sc of scenes) {
+        if (fit(sc) && sc.onResize) sc.onResize();
+      }
+      redraw = true;
+    });
+
+    last = performance.now();
+    requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (!paused) {
+      for (const sc of scenes) {
+        if (!sc.visible) continue;
+        sc.t += dt;
+        sc.draw(sc, dt);
+      }
+      redraw = false;
+    } else if (redraw) {
+      for (const sc of scenes) {
+        if (sc.visible) sc.draw(sc, 0);
+      }
+      redraw = false;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
