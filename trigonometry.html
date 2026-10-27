@@ -1,0 +1,3229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trigonometry in Video Games — Interactive Field Guide</title>
+<meta name="description" content="Eight interactive canvas demos showing how trigonometry powers aiming, projectiles, orbits, stealth cones, IK, organic motion, and homing missiles in video games.">
+<meta name="theme-color" content="#070b14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070b14'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3Cpath d='M16 16 L23 11' stroke='%23f472b6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#070b14;
+    --bg-2:#0a1120;
+    --panel:#0c1526;
+    --line:rgba(148,163,184,.14);
+    --line-soft:rgba(148,163,184,.08);
+    --text:#e7eef8;
+    --muted:#93a4bc;
+    --dim:#7d8ca5;
+    --cyan:#22d3ee;
+    --magenta:#f472b6;
+    --lime:#a3e635;
+    --amber:#fbbf24;
+    --red:#fb7185;
+    --violet:#a78bfa;
+    --mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --radius:18px;
+    --maxw:1180px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:84px}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:
+      radial-gradient(900px 520px at 12% -8%,rgba(34,211,238,.10),transparent 62%),
+      radial-gradient(820px 520px at 92% -2%,rgba(244,114,182,.08),transparent 58%),
+      var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);
+    background-size:48px 48px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 18%,transparent 76%);
+    mask-image:radial-gradient(ellipse at 50% 0%,#000 18%,transparent 76%);
+  }
+  ::selection{background:rgba(34,211,238,.28);color:#fff}
+
+  a{color:inherit}
+  code{font-family:var(--mono)}
+  .skip{
+    position:absolute;left:-9999px;top:12px;z-index:100;
+    padding:10px 14px;border-radius:8px;background:var(--cyan);color:#04121a;
+    font:700 11px var(--mono);text-decoration:none;
+  }
+  .skip:focus{left:16px}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px clamp(16px,4vw,40px);
+    border-bottom:1px solid var(--line-soft);
+    background:rgba(7,11,20,.74);
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    font:700 12px var(--mono);letter-spacing:.2em;text-decoration:none;white-space:nowrap;
+  }
+  .brand .slash{color:var(--magenta)}
+  .brand-mark{
+    width:17px;height:17px;border:1px solid var(--cyan);border-radius:50%;
+    position:relative;box-shadow:0 0 14px rgba(34,211,238,.45);flex:none;
+  }
+  .brand-mark::after{
+    content:"";position:absolute;left:8px;top:8px;width:7px;height:1px;
+    background:var(--magenta);transform-origin:0 50%;transform:rotate(-48deg);
+  }
+  .topbar-right{display:flex;align-items:center;gap:18px}
+  .nav-stat{
+    font:500 9px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    display:flex;align-items:center;gap:6px;
+  }
+  .nav-stat b{color:var(--text);font-size:11px;font-weight:700}
+  .pause-btn{
+    font:700 9px var(--mono);letter-spacing:.13em;text-transform:uppercase;
+    color:var(--lime);background:rgba(163,230,53,.06);
+    border:1px solid rgba(163,230,53,.3);border-radius:8px;
+    padding:8px 11px;cursor:pointer;transition:background .2s,color .2s,border-color .2s;
+    white-space:nowrap;
+  }
+  .pause-btn:hover{background:rgba(163,230,53,.13)}
+  .pause-btn[aria-pressed="true"]{
+    color:var(--amber);border-color:rgba(251,191,36,.38);background:rgba(251,191,36,.08);
+  }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;isolation:isolate;overflow:hidden;
+    min-height:clamp(560px,74vh,760px);
+    display:flex;align-items:center;
+    padding:clamp(64px,9vw,110px) clamp(16px,4vw,40px) clamp(56px,7vw,84px);
+  }
+  #hero-canvas{
+    position:absolute;inset:0;width:100%;height:100%;
+    z-index:-1;opacity:.9;display:block;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(620px 340px at 18% 34%,rgba(34,211,238,.09),transparent 65%),
+      radial-gradient(520px 340px at 78% 18%,rgba(244,114,182,.09),transparent 62%);
+  }
+  .hero-inner{width:100%;max-width:var(--maxw);margin:0 auto}
+  .eyebrow{
+    margin:0 0 18px;
+    font:700 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{
+    content:"";width:22px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent);
+  }
+  h1{
+    margin:0;max-width:780px;
+    font-size:clamp(2.55rem,6.2vw,4.9rem);
+    line-height:.94;letter-spacing:-.045em;font-weight:800;
+  }
+  h1 .grad{
+    background:linear-gradient(100deg,var(--cyan) 0%,#7dd3fc 34%,var(--magenta) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lede{
+    max-width:580px;margin:26px 0 0;
+    font-size:clamp(1rem,1.3vw,1.1rem);line-height:1.72;color:#a8b7cb;
+  }
+  .lede strong{color:var(--text);font-weight:600}
+  .hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:32px}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;
+    padding:12px 17px;border-radius:10px;text-decoration:none;
+    font:700 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+    border:1px solid transparent;transition:transform .2s,box-shadow .2s,background .2s,border-color .2s;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{
+    color:#04121a;background:var(--cyan);
+    box-shadow:0 0 30px rgba(34,211,238,.28);
+  }
+  .btn-primary:hover{box-shadow:0 6px 34px rgba(34,211,238,.4)}
+  .btn-primary span{font-size:13px;line-height:1}
+  .btn-ghost{
+    color:var(--text);border-color:rgba(148,163,184,.24);background:rgba(148,163,184,.045);
+  }
+  .btn-ghost:hover{background:rgba(148,163,184,.1);border-color:rgba(148,163,184,.4)}
+  .hero-stats{display:flex;flex-wrap:wrap;gap:0;margin-top:48px}
+  .hero-stats div{
+    padding:0 26px;border-left:1px solid var(--line);
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .hero-stats div:first-child{padding-left:0;border-left:0}
+  .hero-stats span{font:700 20px var(--mono);letter-spacing:-.02em}
+  .hero-stats small{font:600 8px var(--mono);letter-spacing:.17em;text-transform:uppercase;color:var(--dim)}
+
+  /* ---------- shared section ---------- */
+  .cases,.cheatsheet{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+  .cases{padding-top:clamp(64px,8vw,100px);padding-bottom:clamp(56px,7vw,80px)}
+  .cheatsheet{padding-top:clamp(56px,7vw,84px);padding-bottom:clamp(56px,7vw,84px)}
+  .section-head{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:32px;
+    margin-bottom:34px;
+  }
+  .section-head h2{
+    margin:0;max-width:680px;
+    font-size:clamp(1.55rem,3.2vw,2.35rem);line-height:1.08;letter-spacing:-.035em;font-weight:750;
+  }
+  .section-note{max-width:330px;margin:0 0 3px;font-size:12.5px;line-height:1.65;color:var(--dim)}
+
+  /* ---------- cards ---------- */
+  .case-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .case{
+    position:relative;display:flex;flex-direction:column;
+    padding:22px;border-radius:var(--radius);
+    border:1px solid var(--line);
+    background:linear-gradient(165deg,rgba(15,25,44,.94),rgba(8,13,24,.97));
+    box-shadow:0 24px 60px -46px rgba(0,0,0,.95);
+    overflow:hidden;
+    transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;
+  }
+  .case::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    opacity:.7;pointer-events:none;
+  }
+  .case::after{
+    content:"";position:absolute;right:-120px;top:-150px;width:280px;height:280px;
+    background:radial-gradient(circle,var(--accent),transparent 68%);
+    opacity:.065;pointer-events:none;
+  }
+  .case:hover{
+    transform:translateY(-3px);
+    border-color:rgba(148,163,184,.28);
+    box-shadow:0 30px 70px -44px rgba(0,0,0,1),0 0 40px -22px var(--accent);
+  }
+  .case.feature{grid-column:1 / -1}
+  .case-top{position:relative;display:flex;align-items:center;min-height:18px}
+  .case-tag{
+    display:inline-flex;align-items:center;gap:7px;
+    font:700 9px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+  }
+  .case-tag i{
+    width:5px;height:5px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px var(--accent);flex:none;
+  }
+  .case-num{
+    position:absolute;right:0;top:-10px;
+    font:700 52px/1 var(--mono);letter-spacing:-.06em;
+    color:rgba(148,163,184,.075);pointer-events:none;user-select:none;
+  }
+  .case h3{
+    position:relative;margin:12px 0 8px;max-width:92%;
+    font-size:clamp(1.02rem,1.35vw,1.16rem);line-height:1.28;letter-spacing:-.015em;font-weight:700;
+  }
+  .case-copy{
+    position:relative;margin:0;max-width:62ch;
+    font-size:13px;line-height:1.66;color:var(--muted);
+  }
+  .case-copy code{
+    font-size:11.5px;color:#c6e9f5;background:rgba(34,211,238,.07);
+    padding:1px 4px;border-radius:4px;
+  }
+  .stage{
+    position:relative;margin-top:16px;border-radius:13px;overflow:hidden;
+    border:1px solid rgba(148,163,184,.14);
+    background:radial-gradient(130% 140% at 28% 0%,#0a1323 0%,#060a12 72%);
+  }
+  .stage::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    box-shadow:inset 0 0 46px rgba(0,0,0,.38);
+  }
+  .stage canvas{display:block;width:100%;aspect-ratio:16/9;touch-action:pan-y}
+  .feature .stage canvas{aspect-ratio:21/9}
+  .case-foot{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:auto;padding-top:12px;
+  }
+  code.formula{
+    flex:1 1 auto;min-width:0;
+    font-size:10.5px;line-height:1.5;color:#a9d9e9;
+    background:rgba(34,211,238,.045);
+    border:1px solid rgba(34,211,238,.12);
+    padding:8px 10px;border-radius:8px;
+    white-space:nowrap;overflow-x:auto;scrollbar-width:thin;
+  }
+  .hint{
+    font:600 8.5px var(--mono);letter-spacing:.13em;text-transform:uppercase;
+    color:var(--dim);white-space:nowrap;
+  }
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:13px}
+  .control{display:flex;flex-direction:column;gap:7px}
+  .control-label{
+    display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    font:600 8.5px var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+  }
+  .control-label b{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+  input[type="range"]{
+    -webkit-appearance:none;appearance:none;width:100%;height:18px;margin:0;
+    background:transparent;cursor:pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:3px;border-radius:99px;
+    background:linear-gradient(90deg,rgba(34,211,238,.5),rgba(148,163,184,.14));
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;margin-top:-5px;border-radius:50%;
+    background:#eafcff;border:2px solid var(--cyan);box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  input[type="range"]::-moz-range-track{
+    height:3px;border-radius:99px;background:rgba(148,163,184,.18);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:11px;height:11px;border-radius:50%;background:#eafcff;border:2px solid var(--cyan);
+    box-shadow:0 0 10px rgba(34,211,238,.6);
+  }
+  input[type="range"]:focus-visible{outline:2px solid rgba(34,211,238,.75);outline-offset:4px;border-radius:99px}
+
+  /* ---------- cheat sheet ---------- */
+  .cheatsheet{
+    border-top:1px solid var(--line-soft);
+  }
+  .formula-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .formula-card{
+    padding:16px;border-radius:14px;border:1px solid rgba(148,163,184,.12);
+    background:rgba(12,20,36,.58);
+    transition:border-color .2s,background .2s;
+  }
+  .formula-card:hover{border-color:rgba(34,211,238,.28);background:rgba(12,22,40,.78)}
+  .formula-k{
+    display:block;font:700 8px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);
+  }
+  .formula-card code{
+    display:block;margin:10px 0 8px;
+    font-size:12.5px;line-height:1.5;color:#e6f7ff;
+    white-space:nowrap;overflow-x:auto;
+  }
+  .formula-card p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim)}
+  .also{margin-top:38px;padding-top:26px;border-top:1px dashed rgba(148,163,184,.12)}
+  .also .eyebrow{color:var(--dim);margin-bottom:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips span{
+    padding:7px 11px;border-radius:99px;border:1px solid rgba(148,163,184,.15);
+    background:rgba(148,163,184,.035);
+    font:600 9px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:#a3b3c8;
+    transition:color .2s,border-color .2s;
+  }
+  .chips span:hover{color:var(--cyan);border-color:rgba(34,211,238,.35)}
+
+  /* ---------- footer ---------- */
+  footer{
+    position:relative;z-index:1;
+    max-width:var(--maxw);margin:0 auto;
+    padding:30px clamp(16px,4vw,40px) 44px;
+    border-top:1px solid var(--line-soft);
+    display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+    font:500 9.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
+  }
+  footer .brand{font-size:10px;letter-spacing:.16em;color:var(--text)}
+  footer em{font-style:normal;color:var(--cyan)}
+
+  /* ---------- motion ---------- */
+  @keyframes revealIn{
+    from{opacity:0;transform:translateY(18px)}
+    to{opacity:1;transform:none}
+  }
+  .reveal{opacity:1}
+  .reveal.in{animation:revealIn .65s ease both}
+
+  :focus-visible{outline:2px solid rgba(34,211,238,.8);outline-offset:3px}
+
+  @media (max-width:980px){
+    .case-grid{grid-template-columns:1fr}
+    .section-head{flex-direction:column;align-items:flex-start;gap:14px}
+    .section-note{max-width:520px}
+  }
+  @media (max-width:700px){
+    .nav-stat{display:none}
+    .hero-stats div{padding:0 20px}
+    h1{letter-spacing:-.035em}
+    .stage canvas{aspect-ratio:16/10}
+    .feature .stage canvas{aspect-ratio:16/10}
+  }
+  @media (max-width:620px){
+    .case{padding:17px;border-radius:16px}
+    .case h3{max-width:88%}
+    .case-num{font-size:42px}
+    .stage canvas,.feature .stage canvas{aspect-ratio:1/1.03}
+    .controls{grid-template-columns:1fr}
+    .hero-stats{gap:0;margin-top:38px}
+    .hero-stats div{padding:0 14px}
+    .hero-stats div:first-child{padding-left:0}
+    .hero-stats span{font-size:17px}
+    .hero-actions{gap:8px}
+    .btn{padding:11px 14px}
+    footer{flex-direction:column;align-items:flex-start}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+    .reveal.in{animation:none}
+    .case,.btn,.chips span{transition:none}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#cases">Skip to the demos</a>
+
+<header class="topbar">
+  <a class="brand" href="#top" aria-label="Trig Play, back to top">
+    <span class="brand-mark" aria-hidden="true"></span>
+    TRIG<span class="slash">//</span>PLAY
+  </a>
+  <div class="topbar-right">
+    <span class="nav-stat"><b>08</b> mechanics</span>
+    <span class="nav-stat"><b>08</b> live graphs</span>
+    <button id="pause-btn" class="pause-btn" type="button" aria-pressed="false" title="Pause or resume every canvas animation">Pause motion</button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <canvas id="hero-canvas" data-scene="hero" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <p class="eyebrow">Interactive field guide · 08 live simulations</p>
+      <h1>The <span class="grad">trigonometry</span><br>hiding in your games</h1>
+      <p class="lede">
+        Aim assist, orbiting patrols, stealth cones, reaching limbs, floating loot. Under every
+        smooth motion is a triangle — and <strong>eight live canvases</strong> to prove it.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#cases">Explore the cases <span aria-hidden="true">↓</span></a>
+        <a class="btn btn-ghost" href="#cheatsheet">Formula cheat sheet</a>
+      </div>
+      <div class="hero-stats" aria-label="Page statistics">
+        <div><span>08</span><small>mechanics</small></div>
+        <div><span>08</span><small>live graphs</small></div>
+        <div><span>00</span><small>libraries</small></div>
+        <div><span>∞</span><small>triangles</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cases" id="cases">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">The cases</p>
+        <h2>Eight places trigonometry does the heavy lifting</h2>
+      </div>
+      <p class="section-note">
+        Every panel is drawn live on a canvas. Move your cursor over the interactive sims,
+        drag the sliders on the others, and pause the whole page up top.
+      </p>
+    </div>
+
+    <div class="case-grid">
+
+      <article class="case feature reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 01 · Core math</span>
+          <span class="case-num" aria-hidden="true">01</span>
+        </div>
+        <h3>One circle explains every rotation and wave</h3>
+        <p class="case-copy">
+          Spin a radius around a circle. Its shadow on the x-axis is cosine; its height is sine.
+          Track that point over time and the same motion unrolls into the two waves every game engine
+          leans on. Master this pair and the next seven cases are variations on a theme.
+        </p>
+        <div class="stage">
+          <canvas data-scene="unit" role="img" aria-label="A radius rotating around a unit circle with its cosine and sine projections, beside a live graph of the sine and cosine waves."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">x = cos θ · y = sin θ · sin²θ + cos²θ = 1</code>
+          <span class="hint">Auto-rotating</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 02 · Aiming</span>
+          <span class="case-num" aria-hidden="true">02</span>
+        </div>
+        <h3>atan2 turns a target into an angle</h3>
+        <p class="case-copy">
+          A turret only needs to know which way to point. Pass the horizontal and vertical gap to
+          <code>atan2</code> and it returns the angle — correct in every quadrant, even when the target
+          is directly above. Feed that angle to a cosine and sine to get the barrel direction.
+        </p>
+        <div class="stage">
+          <canvas data-scene="aim" role="img" aria-label="A top-down turret rotating to aim at the cursor or a moving target, with a live plot of the wrapped aim angle."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">θ = atan2(Δy, Δx)</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#a3e635">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 03 · Projectiles</span>
+          <span class="case-num" aria-hidden="true">03</span>
+        </div>
+        <h3>A cannon shot is a triangle with gravity</h3>
+        <p class="case-copy">
+          Launch speed splits into two independent motions: horizontal <code>v·cosθ</code> and vertical
+          <code>v·sinθ</code>. Gravity only touches the vertical one, so the path is a parabola. Tune the
+          angle and power to drop the shot on the target — and watch the range curve peak.
+        </p>
+        <div class="stage">
+          <canvas data-scene="proj" role="img" aria-label="Side view of a cannon firing a projectile in a parabolic arc, with a dotted predicted trajectory and a live range-versus-angle graph."></canvas>
+        </div>
+        <div class="controls">
+          <label class="control">
+            <span class="control-label">Launch angle <b id="proj-angle-val">45°</b></span>
+            <input id="proj-angle" type="range" min="15" max="75" value="45" step="1">
+          </label>
+          <label class="control">
+            <span class="control-label">Muzzle power <b id="proj-power-val">78%</b></span>
+            <input id="proj-power" type="range" min="30" max="100" value="78" step="1">
+          </label>
+        </div>
+        <div class="case-foot">
+          <code class="formula">vx = v cos θ · vy = v sin θ − gt</code>
+          <span class="hint">Adjust the sliders</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#a78bfa">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 04 · Orbits</span>
+          <span class="case-num" aria-hidden="true">04</span>
+        </div>
+        <h3>Orbiting patrols are cosine plus sine</h3>
+        <p class="case-copy">
+          Patrol routes, orbiting cameras, pickup halos and rotating shields all place objects with
+          cosine and sine. Feed both the same angle and you get a point on a circle. Their two waves are
+          permanently 90° out of phase — one peaks while the other is at zero.
+        </p>
+        <div class="stage">
+          <canvas data-scene="orbit" role="img" aria-label="Top-down view of six enemies orbiting a central core, with the highlighted enemy's x and y waves plotted beside it."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">x = r cos θ · y = r sin θ</code>
+          <span class="hint">Auto-orbiting</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#fb7185">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 05 · Stealth</span>
+          <span class="case-num" aria-hidden="true">05</span>
+        </div>
+        <h3>Vision cones are a dot product in disguise</h3>
+        <p class="case-copy">
+          Stealth games don't need an expensive raycast to know if you're seen. Compare the guard's
+          facing vector with the vector to the player: when <code>cos θ</code> is large enough and you're
+          inside the range, you're spotted. Sweep the cone and watch the threshold flip.
+        </p>
+        <div class="stage">
+          <canvas data-scene="fov" role="img" aria-label="Top-down guard sweeping a vision cone across an intruder, with a live plot of alignment against the detection threshold."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">cos θ = (a · b) / (|a||b|)</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#f472b6">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 06 · IK</span>
+          <span class="case-num" aria-hidden="true">06</span>
+        </div>
+        <h3>Reaching limbs are solved triangles</h3>
+        <p class="case-copy">
+          Two-bone IK — arms, legs, spider mechs, ropes — is the law of cosines at work. One cosine
+          gives the elbow's interior angle; <code>atan2</code> aims the whole limb. Clamp the target
+          distance and the limb can never stretch out of its socket.
+        </p>
+        <div class="stage">
+          <canvas data-scene="ik" role="img" aria-label="A two-bone robot arm reaching a movable target, with the shoulder and elbow angles plotted over time."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">c² = a² + b² − 2ab cos C</code>
+          <span class="hint">↖ Move cursor</span>
+        </div>
+      </article>
+
+      <article class="case reveal" style="--accent:#22d3ee">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 07 · Organic motion</span>
+          <span class="case-num" aria-hidden="true">07</span>
+        </div>
+        <h3>“Alive” is a sine wave on top of the pose</h3>
+        <p class="case-copy">
+          Idle breathing, floating pickups, flags, seaweed, camera bob: all the small organic details
+          are sine waves layered over a base position. Amplitude controls how far it drifts; frequency
+          controls how fast. Drag both and watch the curve rebuild.
+        </p>
+        <div class="stage">
+          <canvas data-scene="sine" role="img" aria-label="A jellyfish bobbing above animated water, with amplitude markers and a live sine wave graph driven by the sliders."></canvas>
+        </div>
+        <div class="controls">
+          <label class="control">
+            <span class="control-label">Amplitude <b id="sine-amp-val">60%</b></span>
+            <input id="sine-amp" type="range" min="20" max="100" value="60" step="1">
+          </label>
+          <label class="control">
+            <span class="control-label">Frequency <b id="sine-freq-val">1.0 Hz</b></span>
+            <input id="sine-freq" type="range" min="40" max="240" value="100" step="5">
+          </label>
+        </div>
+        <div class="case-foot">
+          <code class="formula">y(t) = A sin(ωt + φ)</code>
+          <span class="hint">Adjust the sliders</span>
+        </div>
+      </article>
+
+      <article class="case feature reveal" style="--accent:#fbbf24">
+        <div class="case-top">
+          <span class="case-tag"><i></i>Case 08 · Homing</span>
+          <span class="case-num" aria-hidden="true">08</span>
+        </div>
+        <h3>Homing missiles chase an angle, not a point</h3>
+        <p class="case-copy">
+          A missile can't teleport its nose at the target. Each frame it measures the bearing with
+          <code>atan2</code>, takes the shortest angle difference, and turns by at most its turn rate.
+          Too slow and it overshoots; too fast and it feels magnetic.
+        </p>
+        <div class="stage">
+          <canvas data-scene="homing" role="img" aria-label="A homing missile chasing a moving ship, with the heading error plotted as a scrolling graph."></canvas>
+        </div>
+        <div class="case-foot">
+          <code class="formula">Δθ = wrap(θ_target − θ_heading)</code>
+          <span class="hint">Auto-chase</span>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="cheatsheet" id="cheatsheet">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Pocket reference</p>
+        <h2>The formulas behind the demos</h2>
+      </div>
+      <p class="section-note">
+        Eight lines that cover most gameplay math. Everything else is a variation or a combination.
+      </p>
+    </div>
+    <div class="formula-grid">
+      <div class="formula-card">
+        <span class="formula-k">Aim</span>
+        <code>θ = atan2(Δy, Δx)</code>
+        <p>Quadrant-safe angle from a direction vector. No special cases.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Launch</span>
+        <code>vx = v cos θ · vy = v sin θ</code>
+        <p>Split a diagonal speed into independent horizontal and vertical parts.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Rotation</span>
+        <code>x' = x cos θ − y sin θ<br>y' = x sin θ + y cos θ</code>
+        <p>Spin sprites, cameras, and minimaps without losing their shape.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Detection</span>
+        <code>cos θ = (a · b) / (|a||b|)</code>
+        <p>Compare facing and target direction. Compare the result to a cone threshold.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Reach</span>
+        <code>c² = a² + b² − 2ab cos C</code>
+        <p>The law of cosines: find a joint angle from three side lengths.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Looping</span>
+        <code>wrap(θ) = ((θ + π) mod 2π) − π</code>
+        <p>Shortest angle difference. Essential for smooth turning and steering.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Organic</span>
+        <code>y = A sin(2πft + φ)</code>
+        <p>Amplitude, frequency and phase — the anatomy of every idle animation.</p>
+      </div>
+      <div class="formula-card">
+        <span class="formula-k">Identity</span>
+        <code>sin²θ + cos²θ = 1</code>
+        <p>Why the unit circle stays a circle, and why normalized vectors stay length 1.</p>
+      </div>
+    </div>
+    <div class="also">
+      <p class="eyebrow">Also hiding in plain sight</p>
+      <div class="chips">
+        <span>Audio panning</span>
+        <span>Camera shake</span>
+        <span>Loot magnet pull</span>
+        <span>Rotating minimap</span>
+        <span>Terrain normals</span>
+        <span>Damage falloff</span>
+        <span>Animation blending</span>
+        <span>Procedural noise</span>
+        <span>Lighting angles</span>
+        <span>Grappling hooks</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>TRIG<span class="slash">//</span>PLAY</a>
+  <span>Built with vanilla JS + Canvas · no engines, no libraries, <em>no vectors were harmed</em></span>
+  <span>08 demos · 60 fps · pause anytime</span>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ============================================================
+     CONSTANTS & HELPERS
+     ============================================================ */
+  const TAU = Math.PI * 2;
+  const WIN = 8;
+
+  const C = {
+    bg: '#070b14',
+    panel: '#0a1120',
+    text: '#e7eef8',
+    dim: '#6f7f98',
+    muted: '#93a4bc',
+    cyan: '#22d3ee',
+    magenta: '#f472b6',
+    lime: '#a3e635',
+    amber: '#fbbf24',
+    red: '#fb7185',
+    violet: '#a78bfa',
+    slate: '#94a3b8'
+  };
+
+  const MONO = 'ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Liberation Mono", monospace';
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const toDeg = (r) => ((r * 180 / Math.PI) % 360 + 360) % 360;
+  const toRad = (d) => d * Math.PI / 180;
+
+  function wrapAngle(a) {
+    a = (a + Math.PI) % TAU;
+    if (a < 0) a += TAU;
+    return a - Math.PI;
+  }
+
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  function rr(ctx, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawText(ctx, str, x, y, opts = {}) {
+    const {
+      color = C.dim, size = 10, font = MONO, weight = 500,
+      align = 'left', baseline = 'alphabetic', alpha = 1
+    } = opts;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.font = `${weight} ${size}px ${font}`;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  function line(ctx, x1, y1, x2, y2, color, w = 1, dash = null) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function arrow(ctx, x1, y1, x2, y2, color, w = 1.5, head = 7) {
+    line(ctx, x1, y1, x2, y2, color, w);
+    const a = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - Math.cos(a - 0.42) * head, y2 - Math.sin(a - 0.42) * head);
+    ctx.lineTo(x2 - Math.cos(a + 0.42) * head, y2 - Math.sin(a + 0.42) * head);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function dot(ctx, x, y, r, color, blur = 8) {
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function inRect(p, r, pad = 0) {
+    return !!p && p.x >= r.x + pad && p.x <= r.x + r.w - pad && p.y >= r.y + pad && p.y <= r.y + r.h - pad;
+  }
+
+  function pill(ctx, x, y, w, h, border, fill = 'rgba(7,11,20,.62)', radius = 7) {
+    ctx.save();
+    ctx.fillStyle = fill;
+    rr(ctx, x, y, w, h, radius);
+    ctx.fill();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function panel(ctx, r, label, accent, fs) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,17,31,.58)';
+    rr(ctx, r.x, r.y, r.w, r.h, 12);
+    ctx.fill();
+
+    ctx.save();
+    rr(ctx, r.x, r.y, r.w, r.h, 12);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(148,163,184,.055)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const step = 26;
+    for (let x = r.x + step; x < r.x + r.w; x += step) {
+      ctx.moveTo(x, r.y);
+      ctx.lineTo(x, r.y + r.h);
+    }
+    for (let y = r.y + step; y < r.y + r.h; y += step) {
+      ctx.moveTo(r.x, y);
+      ctx.lineTo(r.x + r.w, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(148,163,184,.14)';
+    ctx.lineWidth = 1;
+    rr(ctx, r.x + .5, r.y + .5, r.w - 1, r.h - 1, 12);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(accent, .5);
+    ctx.lineWidth = 1.5;
+    const tick = 7, inset = 6;
+    ctx.beginPath();
+    ctx.moveTo(r.x + inset, r.y + inset + tick); ctx.lineTo(r.x + inset, r.y + inset); ctx.lineTo(r.x + inset + tick, r.y + inset);
+    ctx.moveTo(r.x + r.w - inset - tick, r.y + inset); ctx.lineTo(r.x + r.w - inset, r.y + inset); ctx.lineTo(r.x + r.w - inset, r.y + inset + tick);
+    ctx.moveTo(r.x + inset, r.y + r.h - inset - tick); ctx.lineTo(r.x + inset, r.y + r.h - inset); ctx.lineTo(r.x + inset + tick, r.y + r.h - inset);
+    ctx.moveTo(r.x + r.w - inset - tick, r.y + r.h - inset); ctx.lineTo(r.x + r.w - inset, r.y + r.h - inset); ctx.lineTo(r.x + r.w - inset, r.y + r.h - inset - tick);
+    ctx.stroke();
+
+    if (label) {
+      ctx.fillStyle = rgba(accent, .9);
+      ctx.beginPath();
+      ctx.arc(r.x + 13, r.y + 14, 2.4, 0, TAU);
+      ctx.fill();
+      drawText(ctx, label, r.x + 21, r.y + 17.5, {
+        color: rgba(accent, .82),
+        size: Math.max(8, fs * 0.8),
+        weight: 700
+      });
+    }
+    ctx.restore();
+  }
+
+  function plotRect(g, l = 34, r = 12, t = 30, b = 22) {
+    return {
+      x: g.x + l,
+      y: g.y + t,
+      w: Math.max(20, g.w - l - r),
+      h: Math.max(20, g.h - t - b)
+    };
+  }
+
+  function fsFor(sc) {
+    return clamp(Math.min(sc.w, sc.h) * 0.032, 8.5, 12);
+  }
+
+  let paused = false;
+  let redraw = true;
+  let last = 0;
+  const scenes = [];
+
+  const builders = {};
+
+  function newScene(canvas) {
+    return {
+      canvas,
+      ctx: canvas.getContext('2d'),
+      w: 0,
+      h: 0,
+      t: 8,
+      visible: true,
+      dirty: true,
+      pointer: null
+    };
+  }
+
+  function enablePointer(sc) {
+    sc.canvas.style.cursor = 'crosshair';
+    const set = (e) => {
+      const r = sc.canvas.getBoundingClientRect();
+      sc.pointer = { x: e.clientX - r.left, y: e.clientY - r.top };
+      redraw = true;
+    };
+    sc.canvas.addEventListener('pointermove', set);
+    sc.canvas.addEventListener('pointerdown', set);
+    sc.canvas.addEventListener('pointerleave', () => {
+      sc.pointer = null;
+      redraw = true;
+    });
+  }
+
+  function fit(sc) {
+    const rect = sc.canvas.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const pw = Math.round(rect.width * dpr);
+    const ph = Math.round(rect.height * dpr);
+    if (sc.canvas.width !== pw || sc.canvas.height !== ph) {
+      sc.canvas.width = pw;
+      sc.canvas.height = ph;
+    }
+    sc.w = pw / dpr;
+    sc.h = ph / dpr;
+    sc.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sc.dirty = true;
+    return true;
+  }
+
+  function panes(W, H) {
+    const pad = W < 500 ? 8 : 12;
+    const gap = W < 500 ? 8 : 12;
+    const stacked = W / H < 1.3;
+    if (stacked) {
+      const sceneH = (H - pad * 2 - gap) * 0.57;
+      return {
+        scene: { x: pad, y: pad, w: W - pad * 2, h: sceneH },
+        graph: { x: pad, y: pad + sceneH + gap, w: W - pad * 2, h: H - pad * 2 - sceneH - gap },
+        stacked: true
+      };
+    }
+    const sceneW = (W - pad * 2 - gap) * 0.58;
+    return {
+      scene: { x: pad, y: pad, w: sceneW, h: H - pad * 2 },
+      graph: { x: pad + sceneW + gap, y: pad, w: W - pad * 2 - sceneW - gap, h: H - pad * 2 },
+      stacked: false
+    };
+  }
+
+  /* ============================================================
+     SCENE 00 — HERO
+     ============================================================ */
+  builders.hero = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 0;
+    sc.pointer = null;
+
+    const stars = Array.from({ length: 52 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: Math.random() * 1.2 + .35,
+      p: Math.random() * TAU,
+      s: Math.random() * .6 + .3
+    }));
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      const t = sc.t;
+      ctx.clearRect(0, 0, w, h);
+
+      if (w > 880) {
+        const cx = w * 0.79;
+        const cy = h * 0.48;
+        const R = Math.min(w, h) * 0.235;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(34,211,238,.10)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, TAU); ctx.stroke();
+        line(ctx, cx - R * 1.22, cy, cx + R * 1.22, cy, 'rgba(148,163,184,.09)', 1);
+        line(ctx, cx, cy - R * 1.22, cx, cy + R * 1.22, 'rgba(148,163,184,.09)', 1);
+        const a = t * 0.55;
+        const px = cx + Math.cos(a) * R;
+        const py = cy - Math.sin(a) * R;
+        line(ctx, cx, cy, px, py, 'rgba(226,232,240,.16)', 1.2);
+        line(ctx, px, py, px, cy, 'rgba(244,114,182,.18)', 1, [3, 4]);
+        line(ctx, cx, cy, px, cy, 'rgba(34,211,238,.18)', 1, [3, 4]);
+        dot(ctx, px, py, 2.6, 'rgba(34,211,238,.55)', 12);
+        ctx.strokeStyle = 'rgba(163,230,53,.22)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, R * 0.34, 0, -a, true); ctx.stroke();
+        ctx.restore();
+      }
+
+      const colors = [C.cyan, C.violet, C.magenta, C.lime];
+      for (let i = 0; i < 4; i++) {
+        const baseY = h * (0.61 + i * 0.095);
+        ctx.save();
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += 6) {
+          const y = baseY
+            + Math.sin(x * 0.0042 + t * (0.32 + i * 0.07) + i * 1.4) * (14 + i * 7)
+            + Math.sin(x * 0.0013 - t * 0.2) * (10 + i * 3);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = rgba(colors[i], 0.30 - i * 0.035);
+        ctx.lineWidth = 1.4;
+        ctx.shadowColor = colors[i];
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (const st of stars) {
+        const yy = ((st.y - t * 0.008 * st.s) % 1 + 1) % 1;
+        const tw = 0.18 + 0.4 * (0.5 + 0.5 * Math.sin(t * 1.3 + st.p));
+        ctx.save();
+        ctx.fillStyle = `rgba(200,235,255,${tw})`;
+        ctx.beginPath();
+        ctx.arc(st.x * w, yy * h, st.r, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 01 — UNIT CIRCLE
+     ============================================================ */
+  builders.unit = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 1.1;
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / UNIT CIRCLE', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / SIN + COS', C.magenta, fs);
+
+      const theta = ((sc.t * 0.55) % TAU + TAU) % TAU;
+      const cx = s.x + s.w * 0.46;
+      const cy = s.y + s.h * 0.56;
+      const R = Math.min(s.w * 0.25, s.h * 0.32);
+      const ax = R * 1.24;
+
+      line(ctx, cx - ax, cy, cx + ax, cy, 'rgba(148,163,184,.32)', 1);
+      line(ctx, cx, cy - ax, cx, cy + ax, 'rgba(148,163,184,.32)', 1);
+      drawText(ctx, 'x', cx + ax + 6, cy + 4, { color: C.dim, size: fs - 1 });
+      drawText(ctx, 'y', cx + 5, cy - ax - 6, { color: C.dim, size: fs - 1 });
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(34,211,238,.26)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+
+      const px = cx + Math.cos(theta) * R;
+      const py = cy - Math.sin(theta) * R;
+      const qx = cx + Math.cos(theta) * R;
+      const qy = cy;
+      const rx = cx;
+      const ry = cy - Math.sin(theta) * R;
+
+      line(ctx, px, py, qx, qy, 'rgba(148,163,184,.36)', 1, [3, 4]);
+      line(ctx, px, py, rx, ry, 'rgba(148,163,184,.36)', 1, [3, 4]);
+
+      ctx.save();
+      ctx.strokeStyle = C.cyan;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 9;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(qx, qy); ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = C.magenta;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = C.magenta;
+      ctx.shadowBlur = 9;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(rx, ry); ctx.stroke();
+      ctx.restore();
+
+      const arcR = R * 0.36;
+      ctx.save();
+      ctx.fillStyle = 'rgba(163,230,53,.07)';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, arcR, 0, -theta, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(163,230,53,.65)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, arcR, 0, -theta, true);
+      ctx.stroke();
+      ctx.restore();
+
+      const mid = theta / 2;
+      drawText(ctx, 'θ', cx + Math.cos(mid) * (arcR + 11), cy - Math.sin(mid) * (arcR + 11), {
+        color: C.lime, size: fs + 1, weight: 700, align: 'center', baseline: 'middle'
+      });
+
+      line(ctx, cx, cy, px, py, 'rgba(231,238,248,.75)', 2);
+      dot(ctx, px, py, 5, C.lime, 14);
+      dot(ctx, qx, qy, 3.4, C.cyan, 9);
+      dot(ctx, rx, ry, 3.4, C.magenta, 9);
+      drawText(ctx, 'P', px + 9, py - 9, { color: C.lime, size: fs, weight: 700 });
+
+      if (Math.abs(Math.cos(theta)) > 0.16) {
+        drawText(ctx, 'cos θ', (cx + qx) / 2, cy + 15, {
+          color: C.cyan, size: Math.max(8, fs - 1), align: 'center'
+        });
+      }
+      if (Math.abs(Math.sin(theta)) > 0.16) {
+        drawText(ctx, 'sin θ', cx - 10, (cy + ry) / 2, {
+          color: C.magenta, size: Math.max(8, fs - 1), align: 'right', baseline: 'middle'
+        });
+      }
+
+      const rx2 = s.x + s.w - 12;
+      const rows = [
+        ['θ', (theta * 180 / Math.PI).toFixed(1) + '°', C.lime],
+        ['sin', Math.sin(theta).toFixed(3), C.magenta],
+        ['cos', Math.cos(theta).toFixed(3), C.cyan]
+      ];
+      rows.forEach((row, i) => {
+        const yy = s.y + 40 + i * 17;
+        drawText(ctx, row[0], rx2 - 52, yy, { color: C.dim, size: fs - 1, align: 'right' });
+        drawText(ctx, row[1], rx2, yy, { color: row[2], size: fs, weight: 600, align: 'right' });
+      });
+
+      const pr = plotRect(g, 32, 12, 30, 24);
+      const X = (th) => pr.x + th / TAU * pr.w;
+      const Y = (v) => pr.y + (1.18 - v) / 2.36 * pr.h;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,.1)';
+      ctx.lineWidth = 1;
+      for (let q = 0; q <= 4; q++) {
+        const xx = X(q * Math.PI / 2);
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.09)', 1);
+      }
+      [-1, 0, 1].forEach(v => {
+        line(ctx, pr.x, Y(v), pr.x + pr.w, Y(v), v === 0 ? 'rgba(148,163,184,.24)' : 'rgba(148,163,184,.09)', 1);
+        drawText(ctx, String(v), pr.x - 7, Y(v) + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+      ctx.restore();
+
+      const drawWave = (fn, color) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        for (let i = 0; i <= 170; i++) {
+          const th = i / 170 * TAU;
+          const xx = X(th);
+          const yy = Y(fn(th));
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+      drawWave(Math.cos, C.magenta);
+      drawWave(Math.sin, C.cyan);
+
+      line(ctx, X(theta), pr.y, X(theta), pr.y + pr.h, 'rgba(163,230,53,.5)', 1.2, [3, 4]);
+      dot(ctx, X(theta), Y(Math.sin(theta)), 4, C.cyan, 10);
+      dot(ctx, X(theta), Y(Math.cos(theta)), 4, C.magenta, 10);
+
+      drawText(ctx, '0', pr.x, pr.y + pr.h + 14, { color: C.dim, size: Math.max(7, fs - 2), align: 'center' });
+      drawText(ctx, 'π', X(Math.PI), pr.y + pr.h + 14, { color: C.dim, size: Math.max(7, fs - 2), align: 'center' });
+      drawText(ctx, '2π', pr.x + pr.w, pr.y + pr.h + 14, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      drawText(ctx, 'SIN', g.x + g.w - 38, g.y + 17.5, { color: C.cyan, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      drawText(ctx, 'COS', g.x + g.w - 10, g.y + 17.5, { color: C.magenta, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 02 — AIM / ATAN2
+     ============================================================ */
+  builders.aim = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+    sc.aim = 0.2;
+    sc.samples = [];
+    sc.seeded = false;
+    enablePointer(sc);
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / AIM', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / AIM ANGLE', C.cyan, fs);
+
+      const P = { x: s.x + s.w * 0.30, y: s.y + s.h * 0.63 };
+      const orbitR = Math.min(s.w * 0.34, s.h * 0.30);
+
+      const autoAt = (tt) => {
+        const a = tt * 0.72 + 0.5;
+        const rad = orbitR * (1 + 0.10 * Math.sin(tt * 1.6));
+        return { x: P.x + Math.cos(a) * rad, y: P.y - Math.sin(a) * rad };
+      };
+      const aimAt = (T) => Math.atan2(T.y - P.y, T.x - P.x);
+      const pointerOk = inRect(sc.pointer, s, 16);
+      const target = pointerOk
+        ? { x: clamp(sc.pointer.x, s.x + 18, s.x + s.w - 18), y: clamp(sc.pointer.y, s.y + 18, s.y + s.h - 18) }
+        : autoAt(sc.t);
+
+      if (!sc.seeded) {
+        const t0 = sc.t - WIN;
+        sc.aim = aimAt(autoAt(t0));
+        for (let tt = t0; tt <= sc.t; tt += 1 / 30) {
+          const b = aimAt(autoAt(tt));
+          sc.aim = wrapAngle(sc.aim + wrapAngle(b - sc.aim) * (1 - Math.exp(-(1 / 30) * 9)));
+          sc.samples.push({ t: tt, v: toDeg(sc.aim) });
+        }
+        sc.seeded = true;
+      }
+
+      const bearing = aimAt(target);
+      if (dt > 0) {
+        sc.aim = wrapAngle(sc.aim + wrapAngle(bearing - sc.aim) * (1 - Math.exp(-dt * 10)));
+      } else if (pointerOk) {
+        sc.aim = bearing;
+      }
+
+      if (dt > 0) {
+        sc.samples.push({ t: sc.t, v: toDeg(sc.aim) });
+        while (sc.samples.length && sc.samples[0].t < sc.t - WIN) sc.samples.shift();
+      }
+
+      // arena decoration
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+      const crates = [
+        [s.x + s.w * 0.58, s.y + s.h * 0.16, 34, 20],
+        [s.x + s.w * 0.82, s.y + s.h * 0.72, 24, 24],
+        [s.x + s.w * 0.18, s.y + s.h * 0.20, 22, 16]
+      ];
+      for (const [x, y, cw, ch] of crates) {
+        ctx.fillStyle = 'rgba(148,163,184,.055)';
+        rr(ctx, x, y, cw, ch, 4);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(148,163,184,.12)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(34,211,238,.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(P.x, P.y, orbitR, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+
+      line(ctx, P.x, P.y, P.x + 66, P.y, 'rgba(148,163,184,.28)', 1, [4, 5]);
+      line(ctx, P.x, P.y, target.x, target.y, 'rgba(244,114,182,.28)', 1.2, [3, 5]);
+
+      const arcR = 42;
+      const ccw = sc.aim < 0;
+      ctx.save();
+      ctx.fillStyle = 'rgba(163,230,53,.055)';
+      ctx.beginPath();
+      ctx.moveTo(P.x, P.y);
+      ctx.arc(P.x, P.y, arcR, 0, sc.aim, ccw);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(163,230,53,.7)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(P.x, P.y, arcR, 0, sc.aim, ccw);
+      ctx.stroke();
+      ctx.restore();
+
+      drawText(ctx, 'θ', P.x + Math.cos(sc.aim / 2) * (arcR + 16), P.y + Math.sin(sc.aim / 2) * (arcR + 16), {
+        color: C.lime, size: fs + 1, weight: 700, align: 'center', baseline: 'middle'
+      });
+
+      ctx.save();
+      ctx.translate(P.x, P.y);
+      ctx.rotate(sc.aim);
+      ctx.fillStyle = '#11283a';
+      ctx.strokeStyle = 'rgba(34,211,238,.75)';
+      ctx.lineWidth = 1.4;
+      rr(ctx, 0, -4.5, 30, 9, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.85)';
+      ctx.fillRect(30, -2, 3, 4);
+      ctx.restore();
+
+      dot(ctx, P.x, P.y, 13, 'rgba(34,211,238,.10)', 18);
+      ctx.save();
+      ctx.fillStyle = '#081018';
+      ctx.strokeStyle = 'rgba(34,211,238,.7)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(P.x, P.y, 12, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(P.x, P.y, 4.5, 0, TAU);
+      ctx.fillStyle = C.cyan; ctx.fill();
+      ctx.restore();
+
+      const tcol = pointerOk ? C.lime : C.magenta;
+      ctx.save();
+      ctx.strokeStyle = tcol;
+      ctx.lineWidth = 1.4;
+      ctx.shadowColor = tcol;
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(target.x, target.y, 11, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(target.x, target.y, 3, 0, TAU); ctx.fillStyle = tcol; ctx.fill();
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2;
+        const x1 = target.x + Math.cos(a) * 14;
+        const y1 = target.y + Math.sin(a) * 14;
+        const x2 = target.x + Math.cos(a) * 20;
+        const y2 = target.y + Math.sin(a) * 20;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+      ctx.restore();
+
+      // readout
+      const rw = 82, rh = 59;
+      const rxo = s.x + s.w - rw - 10;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, rw, rh, 'rgba(148,163,184,.14)');
+      const rows = [
+        ['θ', toDeg(sc.aim).toFixed(0) + '°', C.lime],
+        ['sin', Math.sin(sc.aim).toFixed(2), C.magenta],
+        ['cos', Math.cos(sc.aim).toFixed(2), C.cyan]
+      ];
+      rows.forEach((row, i) => {
+        const yy = ryo + 16 + i * 16;
+        drawText(ctx, row[0], rxo + 9, yy, { color: C.dim, size: fs - 2 });
+        drawText(ctx, row[1], rxo + rw - 9, yy, { color: row[2], size: fs - 1, weight: 600, align: 'right' });
+      });
+
+      drawText(ctx, pointerOk ? 'CURSOR LOCK' : 'MOVE CURSOR TO AIM', s.x + 12, s.y + s.h - 10, {
+        color: pointerOk ? 'rgba(163,230,53,.7)' : 'rgba(148,163,184,.5)',
+        size: Math.max(7, fs - 2), weight: 600
+      });
+
+      // graph
+      const pr = plotRect(g, 30, 12, 30, 22);
+      const X = (t) => pr.x + clamp((t - (sc.t - WIN)) / WIN, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1 - v / 360) * pr.h;
+
+      for (let v = 0; v <= 360; v += 90) {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, v === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, v + '°', pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      }
+      for (let k = 1; k < 4; k++) {
+        const xx = pr.x + k / 4 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.06)', 1);
+      }
+
+      ctx.save();
+      ctx.strokeStyle = C.cyan;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 7;
+      ctx.beginPath();
+      let prev = null;
+      for (const smp of sc.samples) {
+        const xx = X(smp.t);
+        const yy = Y(smp.v);
+        if (!prev || Math.abs(smp.v - prev.v) > 180) ctx.moveTo(xx, yy);
+        else ctx.lineTo(xx, yy);
+        prev = smp;
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      const lastS = sc.samples[sc.samples.length - 1];
+      if (lastS) dot(ctx, X(lastS.t), Y(lastS.v), 3.5, C.lime, 9);
+      drawText(ctx, toDeg(sc.aim).toFixed(0) + '°', g.x + g.w - 12, g.y + 17.5, {
+        color: C.cyan, size: Math.max(8, fs - 1), weight: 700, align: 'right'
+      });
+      drawText(ctx, 'WRAPPED 0–360° · LAST 8s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 03 — PROJECTILE
+     ============================================================ */
+  builders.proj = (canvas) => {
+    const sc = newScene(canvas);
+    sc.angle = 45;
+    sc.power = 78;
+    sc.flight = 1.05;
+    sc.phase = 'fly';
+    sc.hold = 0;
+    sc.trail = [];
+    sc.hitFlash = 0;
+    sc.impact = null;
+
+    const angleEl = document.getElementById('proj-angle');
+    const powerEl = document.getElementById('proj-power');
+    const angleVal = document.getElementById('proj-angle-val');
+    const powerVal = document.getElementById('proj-power-val');
+
+    const reset = () => {
+      sc.flight = 0;
+      sc.phase = 'fly';
+      sc.hold = 0;
+      sc.trail = [];
+      sc.hitFlash = 0;
+      sc.impact = null;
+    };
+
+    if (angleEl) angleEl.addEventListener('input', () => {
+      sc.angle = +angleEl.value;
+      if (angleVal) angleVal.textContent = sc.angle + '°';
+      reset();
+      redraw = true;
+    });
+    if (powerEl) powerEl.addEventListener('input', () => {
+      sc.power = +powerEl.value;
+      if (powerVal) powerVal.textContent = sc.power + '%';
+      reset();
+      redraw = true;
+    });
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / BALLISTICS', C.lime, fs);
+      panel(ctx, g, 'GRAPH / RANGE vs ANGLE', C.lime, fs);
+
+      const g0 = 22;
+      const y0 = 3;
+      const x0 = 6;
+      const targetX = 76;
+      const th = toRad(sc.angle);
+      const v0 = 26 + sc.power * 0.16;
+      const vx = v0 * Math.cos(th);
+      const vy = v0 * Math.sin(th);
+      const tLand = (vy + Math.sqrt(vy * vy + 2 * g0 * y0)) / g0;
+      const landX = x0 + vx * tLand;
+
+      if (dt > 0) {
+        if (sc.phase === 'fly') {
+          sc.flight += dt;
+          if (sc.flight >= tLand) {
+            sc.flight = tLand;
+            sc.phase = 'hold';
+            sc.hold = 0;
+            const hit = Math.abs(landX - targetX) <= 4;
+            sc.hitFlash = hit ? 1.5 : 0;
+            sc.impact = { x: landX, life: 0, hit };
+          }
+        } else {
+          sc.hold += dt;
+          if (sc.impact) sc.impact.life += dt;
+          if (sc.hold > 1.05) reset();
+        }
+        if (sc.hitFlash > 0) sc.hitFlash = Math.max(0, sc.hitFlash - dt);
+      }
+
+      const scale = Math.min((s.w - 28) / 112, (s.h - 58) / 48);
+      const groundY = s.y + s.h - 26;
+      const ox = s.x + (s.w - 112 * scale) / 2;
+      const X = (wx) => ox + wx * scale;
+      const Y = (wy) => groundY - wy * scale;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      const sky = ctx.createLinearGradient(0, s.y, 0, groundY);
+      sky.addColorStop(0, 'rgba(34,211,238,0)');
+      sky.addColorStop(1, 'rgba(34,211,238,.05)');
+      ctx.fillStyle = sky;
+      ctx.fillRect(s.x, s.y, s.w, groundY - s.y);
+
+      ctx.fillStyle = 'rgba(5,9,16,.6)';
+      ctx.fillRect(s.x, groundY, s.w, s.y + s.h - groundY);
+      line(ctx, s.x, groundY, s.x + s.w, groundY, 'rgba(148,163,184,.3)', 1.2);
+      for (let x = s.x + 8; x < s.x + s.w; x += 18) {
+        line(ctx, x, groundY + 4, x - 5, groundY + 10, 'rgba(148,163,184,.09)', 1);
+      }
+
+      // dotted prediction
+      ctx.save();
+      ctx.strokeStyle = 'rgba(163,230,53,.3)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      for (let i = 0; i <= 90; i++) {
+        const tt = i / 90 * tLand;
+        const xx = X(x0 + vx * tt);
+        const yy = Y(y0 + vy * tt - .5 * g0 * tt * tt);
+        if (i === 0) ctx.moveTo(xx, yy);
+        else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // landing marker
+      const lx = X(landX);
+      line(ctx, lx - 6, groundY - 6, lx + 6, groundY + 6, 'rgba(163,230,53,.55)', 1.2);
+      line(ctx, lx - 6, groundY + 6, lx + 6, groundY - 6, 'rgba(163,230,53,.55)', 1.2);
+
+      // target pad
+      const tx = X(targetX);
+      const pulse = 0.5 + 0.5 * Math.sin(sc.t * 2.2);
+      ctx.save();
+      ctx.strokeStyle = rgba(C.amber, 0.55 + 0.25 * pulse);
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(tx, groundY + 1, 16 - i * 4.5, 5 - i * 1.3, 0, 0, TAU);
+        ctx.stroke();
+      }
+      ctx.restore();
+      drawText(ctx, 'TARGET', tx, groundY + 17, {
+        color: 'rgba(251,191,36,.6)', size: Math.max(7, fs - 2), align: 'center', weight: 700
+      });
+
+      // cannon
+      const bx = X(x0);
+      const mx = bx + Math.cos(th) * 34;
+      const my = groundY - Math.sin(th) * 34;
+      ctx.save();
+      ctx.translate(bx, groundY);
+      ctx.rotate(-th);
+      ctx.fillStyle = '#0f2233';
+      ctx.strokeStyle = 'rgba(34,211,238,.7)';
+      ctx.lineWidth = 1.4;
+      rr(ctx, 0, -5, 34, 10, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.9)';
+      ctx.fillRect(34, -2.5, 3, 5);
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = '#081018';
+      ctx.strokeStyle = 'rgba(34,211,238,.55)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(bx, groundY, 11, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // velocity decomposition at the muzzle
+      const k = 0.62;
+      arrow(ctx, mx, my, mx + vx * k, my, rgba(C.cyan, .8), 1.2, 5);
+      arrow(ctx, mx, my, mx, my - vy * k, rgba(C.magenta, .8), 1.2, 5);
+      arrow(ctx, mx, my, mx + vx * k, my - vy * k, rgba(C.lime, .75), 1.4, 6);
+      drawText(ctx, 'vx', mx + vx * k + 4, my - 3, { color: rgba(C.cyan, .8), size: Math.max(7, fs - 2) });
+      drawText(ctx, 'vy', mx + 4, my - vy * k - 3, { color: rgba(C.magenta, .8), size: Math.max(7, fs - 2) });
+      drawText(ctx, 'v', mx + vx * k * .55 + 5, my - vy * k * .55 - 5, { color: rgba(C.lime, .8), size: Math.max(7, fs - 2), weight: 700 });
+
+      // projectile
+      const tt = Math.min(sc.flight, tLand);
+      const px = x0 + vx * tt;
+      const py = y0 + vy * tt - .5 * g0 * tt * tt;
+      const psx = X(px);
+      const psy = Y(py);
+
+      if (sc.phase === 'fly' && dt > 0) {
+        sc.trail.push({ x: psx, y: psy });
+        if (sc.trail.length > 30) sc.trail.shift();
+      }
+
+      for (let i = 1; i < sc.trail.length; i++) {
+        const a = i / sc.trail.length;
+        line(ctx, sc.trail[i - 1].x, sc.trail[i - 1].y, sc.trail[i].x, sc.trail[i].y, rgba(C.lime, a * .5), 2);
+      }
+      dot(ctx, psx, psy, 4.5, C.lime, 14);
+      dot(ctx, psx, psy, 1.8, '#ffffff', 6);
+
+      // impact
+      if (sc.phase === 'hold' && sc.impact) {
+        const age = sc.hold;
+        const alpha = Math.max(0, 1 - age / 1.05);
+        ctx.save();
+        ctx.strokeStyle = rgba(sc.impact.hit ? C.lime : C.slate, alpha * .7);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(X(sc.impact.x), groundY + 1, 6 + age * 34, 2 + age * 11, 0, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // readout
+      const rw = 88, rh = 59;
+      const rxo = s.x + s.w - rw - 10;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, rw, rh, 'rgba(148,163,184,.14)');
+      const rows = [
+        ['θ', sc.angle + '°', C.lime],
+        ['v', v0.toFixed(0), C.cyan],
+        ['range', landX.toFixed(0), C.amber]
+      ];
+      rows.forEach((row, i) => {
+        const yy = ryo + 16 + i * 16;
+        drawText(ctx, row[0], rxo + 9, yy, { color: C.dim, size: fs - 2 });
+        drawText(ctx, row[1], rxo + rw - 9, yy, { color: row[2], size: fs - 1, weight: 600, align: 'right' });
+      });
+
+      if (sc.hitFlash > 0) {
+        const a = Math.min(1, sc.hitFlash * 1.4);
+        ctx.save();
+        ctx.shadowColor = C.lime;
+        ctx.shadowBlur = 14;
+        drawText(ctx, 'TARGET HIT', s.x + s.w / 2, s.y + s.h * 0.32, {
+          color: rgba(C.lime, a), size: Math.max(11, fs + 2), weight: 800, align: 'center', alpha: a
+        });
+        ctx.restore();
+      }
+
+      drawText(ctx, 'SLIDE TO TUNE THE SHOT', s.x + 12, s.y + s.h - 10, {
+        color: 'rgba(148,163,184,.5)', size: Math.max(7, fs - 2), weight: 600
+      });
+
+      // graph — range vs angle
+      const pr = plotRect(g, 32, 12, 30, 24);
+      const yMax = 105;
+      const Xa = (a) => pr.x + a / 90 * pr.w;
+      const Yr = (r) => pr.y + (1 - r / yMax) * pr.h;
+
+      for (let r = 0; r <= 100; r += 25) {
+        const yy = Yr(r);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, r === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, String(r), pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      }
+      [0, 45, 90].forEach((a) => {
+        line(ctx, Xa(a), pr.y, Xa(a), pr.y + pr.h, 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, a + '°', Xa(a), pr.y + pr.h + 14, { color: C.dim, size: Math.max(7, fs - 2), align: 'center' });
+      });
+
+      line(ctx, pr.x, Yr(targetX), pr.x + pr.w, Yr(targetX), 'rgba(251,191,36,.45)', 1, [4, 4]);
+      drawText(ctx, 'TARGET', pr.x + pr.w - 2, Yr(targetX) - 5, {
+        color: 'rgba(251,191,36,.7)', size: Math.max(7, fs - 2), align: 'right', weight: 600
+      });
+
+      const rangeAt = (deg) => {
+        const a = toRad(deg);
+        const vy2 = v0 * Math.sin(a);
+        const vx2 = v0 * Math.cos(a);
+        const tf = (vy2 + Math.sqrt(vy2 * vy2 + 2 * g0 * y0)) / g0;
+        return x0 + vx2 * tf;
+      };
+
+      ctx.save();
+      ctx.strokeStyle = C.lime;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = C.lime;
+      ctx.shadowBlur = 7;
+      ctx.beginPath();
+      for (let a = 0; a <= 90; a += 1) {
+        const xx = Xa(a);
+        const yy = Yr(rangeAt(a));
+        if (a === 0) ctx.moveTo(xx, yy);
+        else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      let optA = 45, optR = -1;
+      for (let a = 1; a < 90; a += .5) {
+        const r = rangeAt(a);
+        if (r > optR) { optR = r; optA = a; }
+      }
+      ctx.save();
+      ctx.strokeStyle = 'rgba(231,238,248,.6)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(Xa(optA), Yr(optR), 3, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      drawText(ctx, 'OPT ' + Math.round(optA) + '°', Xa(optA), Yr(optR) - 7, {
+        color: 'rgba(231,238,248,.55)', size: Math.max(7, fs - 2), align: 'center', weight: 600
+      });
+
+      const cr = rangeAt(sc.angle);
+      line(ctx, Xa(sc.angle), pr.y + pr.h, Xa(sc.angle), Yr(cr), 'rgba(244,114,182,.4)', 1, [3, 4]);
+      dot(ctx, Xa(sc.angle), Yr(cr), 4, C.magenta, 10);
+      drawText(ctx, cr.toFixed(0), g.x + g.w - 12, g.y + 17.5, {
+        color: C.lime, size: Math.max(8, fs - 1), weight: 700, align: 'right'
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 04 — ORBITS
+     ============================================================ */
+  builders.orbit = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+
+    const tri = (ctx, x, y, rot, size, color, alpha = 1, blur = 7) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = blur;
+      ctx.beginPath();
+      ctx.moveTo(size, 0);
+      ctx.lineTo(-size * .72, size * .66);
+      ctx.lineTo(-size * .72, -size * .66);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    };
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / ORBIT PATROL', C.violet, fs);
+      panel(ctx, g, 'GRAPH / X + Y WAVES', C.violet, fs);
+
+      const cx = s.x + s.w * 0.50;
+      const cy = s.y + s.h * 0.54;
+      const R = Math.min(s.w * 0.30, s.h * 0.31);
+      const omega = 0.85;
+      const n = 6;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      [R * 0.45, R, R * 1.15].forEach((rad, i) => {
+        ctx.save();
+        ctx.strokeStyle = `rgba(148,163,184,${i === 1 ? .14 : .07})`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash(i === 1 ? [4, 7] : [2, 9]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      for (let i = 0; i < n; i++) {
+        const a = sc.t * omega + i * TAU / n;
+        line(ctx, cx, cy, cx + Math.cos(a) * R, cy - Math.sin(a) * R, 'rgba(167,139,250,.06)', 1);
+      }
+
+      const corePulse = 0.5 + 0.5 * Math.sin(sc.t * 2.1);
+      ctx.save();
+      ctx.strokeStyle = rgba(C.magenta, .18 + corePulse * .18);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 20 + corePulse * 8, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      dot(ctx, cx, cy, 13, 'rgba(244,114,182,.12)', 18);
+      ctx.save();
+      ctx.fillStyle = '#0a1220';
+      ctx.strokeStyle = rgba(C.magenta, .75);
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 11, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      dot(ctx, cx, cy, 3.5, C.magenta, 8);
+      ctx.restore();
+      drawText(ctx, 'CORE', cx, cy + 30, {
+        color: 'rgba(244,114,182,.55)', size: Math.max(7, fs - 2), align: 'center', weight: 700
+      });
+
+      let hx = 0, hy = 0, htheta = 0;
+      for (let i = 0; i < n; i++) {
+        const a = sc.t * omega + i * TAU / n;
+        const ex = cx + Math.cos(a) * R;
+        const ey = cy - Math.sin(a) * R;
+        const rot = Math.atan2(-Math.cos(a), -Math.sin(a));
+        const hot = i === 0;
+
+        for (let k = 1; k <= 5; k++) {
+          const aa = a - k * 0.055;
+          const tx = cx + Math.cos(aa) * R;
+          const ty = cy - Math.sin(aa) * R;
+          dot(ctx, tx, ty, 2.1, hot ? C.lime : C.magenta, 4);
+        }
+        tri(ctx, ex, ey, rot, hot ? 7.5 : 5.6, hot ? C.lime : C.magenta, hot ? 1 : .82, hot ? 12 : 6);
+
+        if (hot) {
+          hx = ex;
+          hy = ey;
+          htheta = a;
+          ctx.save();
+          ctx.strokeStyle = rgba(C.lime, .4);
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([3, 4]);
+          ctx.beginPath();
+          ctx.arc(ex, ey, 13, 0, TAU);
+          ctx.stroke();
+          ctx.restore();
+          drawText(ctx, 'E0', ex + 12, ey - 12, {
+            color: C.lime, size: Math.max(7, fs - 1), weight: 700
+          });
+        }
+      }
+
+      // right triangle on the highlighted enemy
+      const qx = hx;
+      const qy = cy;
+      line(ctx, cx, cy, hx, hy, 'rgba(231,238,248,.24)', 1, [3, 4]);
+      line(ctx, cx, cy, qx, qy, rgba(C.cyan, .5), 1.6);
+      line(ctx, qx, qy, hx, hy, rgba(C.magenta, .5), 1.6);
+
+      const sxSign = Math.sign(cx - hx) || 1;
+      const sySign = Math.sign(cy - hy) || 1;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148,163,184,.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(qx + sxSign * 7, qy);
+      ctx.lineTo(qx + sxSign * 7, qy + sySign * 7);
+      ctx.lineTo(qx, qy + sySign * 7);
+      ctx.stroke();
+      ctx.restore();
+
+      const arcR = R * 0.3;
+      ctx.save();
+      ctx.strokeStyle = rgba(C.lime, .55);
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, arcR, 0, -htheta, true);
+      ctx.stroke();
+      ctx.restore();
+      const mid = htheta / 2;
+      drawText(ctx, 'θ', cx + Math.cos(mid) * (arcR + 11), cy - Math.sin(mid) * (arcR + 11), {
+        color: C.lime, size: fs, weight: 700, align: 'center', baseline: 'middle'
+      });
+      drawText(ctx, 'r', (cx + hx) / 2 + 8, (cy + hy) / 2, {
+        color: 'rgba(231,238,248,.55)', size: Math.max(7, fs - 1), weight: 600
+      });
+
+      const rxo = s.x + s.w - 76;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, 66, 52, 'rgba(148,163,184,.14)');
+      drawText(ctx, 'θ', rxo + 8, ryo + 15, { color: C.dim, size: fs - 2 });
+      drawText(ctx, toDeg(htheta).toFixed(0) + '°', rxo + 58, ryo + 15, { color: C.lime, size: fs - 1, weight: 600, align: 'right' });
+      drawText(ctx, 'x', rxo + 8, ryo + 31, { color: C.cyan, size: fs - 2 });
+      drawText(ctx, Math.cos(htheta).toFixed(2), rxo + 58, ryo + 31, { color: C.cyan, size: fs - 1, weight: 600, align: 'right' });
+      drawText(ctx, 'y', rxo + 8, ryo + 47, { color: C.magenta, size: fs - 2 });
+      drawText(ctx, Math.sin(htheta).toFixed(2), rxo + 58, ryo + 47, { color: C.magenta, size: fs - 1, weight: 600, align: 'right' });
+      ctx.restore();
+
+      drawText(ctx, 'x = r·cos θ    y = r·sin θ', s.x + 12, s.y + s.h - 10, {
+        color: 'rgba(148,163,184,.55)', size: Math.max(7, fs - 2), weight: 600
+      });
+
+      // graph — x and y waves
+      const span = 10;
+      const pr = plotRect(g, 30, 12, 30, 24);
+      const X = (t) => pr.x + clamp((t - (sc.t - span)) / span, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1.1 - v) / 2.2 * pr.h;
+
+      [-1, 0, 1].forEach((v) => {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, v === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, String(v), pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+      for (let k = 1; k < 5; k++) {
+        const xx = pr.x + k / 5 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+      }
+
+      const wave = (fn, color) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        for (let i = 0; i <= 180; i++) {
+          const tt = sc.t - span + span * i / 180;
+          const xx = X(tt);
+          const yy = Y(fn(omega * tt));
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+      wave(Math.cos, C.cyan);
+      wave(Math.sin, C.magenta);
+
+      const now = omega * sc.t;
+      dot(ctx, X(sc.t), Y(Math.cos(now)), 3.5, C.cyan, 9);
+      dot(ctx, X(sc.t), Y(Math.sin(now)), 3.5, C.magenta, 9);
+      drawText(ctx, 'X', g.x + g.w - 32, g.y + 17.5, { color: C.cyan, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      drawText(ctx, 'Y', g.x + g.w - 10, g.y + 17.5, { color: C.magenta, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      drawText(ctx, 'PHASE OFFSET 90° · LAST 10s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 05 — FOV
+     ============================================================ */
+  builders.fov = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+    sc.samples = [];
+    sc.seeded = false;
+    enablePointer(sc);
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / VISION CONE', C.red, fs);
+      panel(ctx, g, 'GRAPH / ALIGNMENT', C.red, fs);
+
+      const G = { x: s.x + s.w * 0.30, y: s.y + s.h * 0.58 };
+      const R = Math.min(s.w * 0.42, s.h * 0.62);
+      const half = toRad(30);
+      const ang = 0.9 * Math.sin(sc.t * 0.55);
+
+      const autoIntruder = (tt) => ({
+        x: G.x + R * (0.55 + 0.16 * Math.sin(tt * 0.33)),
+        y: G.y + R * 0.46 * Math.sin(tt * 0.53 + 0.6)
+      });
+
+      const pointerOk = inRect(sc.pointer, s, 12);
+      const ip = pointerOk
+        ? { x: clamp(sc.pointer.x, s.x + 12, s.x + s.w - 12), y: clamp(sc.pointer.y, s.y + 12, s.y + s.h - 12) }
+        : autoIntruder(sc.t);
+
+      const d = Math.hypot(ip.x - G.x, ip.y - G.y);
+      const bearing = Math.atan2(ip.y - G.y, ip.x - G.x);
+      const diff = Math.abs(wrapAngle(bearing - ang));
+      const cosv = Math.cos(diff);
+      const inRange = d < R;
+      const detected = inRange && diff < half;
+
+      const seedAt = (tt) => {
+        const p = autoIntruder(tt);
+        const a = 0.9 * Math.sin(tt * 0.55);
+        const dd = Math.hypot(p.x - G.x, p.y - G.y);
+        const bb = Math.atan2(p.y - G.y, p.x - G.x);
+        const df = Math.abs(wrapAngle(bb - a));
+        return { t: tt, v: Math.cos(df), detected: dd < R && df < half, inRange: dd < R };
+      };
+
+      if (!sc.seeded) {
+        for (let tt = sc.t - WIN; tt <= sc.t; tt += 0.06) sc.samples.push(seedAt(tt));
+        sc.seeded = true;
+      }
+      if (dt > 0) {
+        sc.samples.push({ t: sc.t, v: cosv, detected, inRange });
+        while (sc.samples.length && sc.samples[0].t < sc.t - WIN) sc.samples.shift();
+      }
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // set dressing
+      ctx.fillStyle = 'rgba(148,163,184,.05)';
+      rr(ctx, s.x + s.w * 0.60, s.y + s.h * 0.08, s.w * 0.14, 24, 4);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(148,163,184,.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(148,163,184,.04)';
+      rr(ctx, s.x + s.w * 0.08, s.y + s.h * 0.77, 42, 24, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // range ring
+      ctx.save();
+      ctx.setLineDash([3, 8]);
+      ctx.strokeStyle = 'rgba(148,163,184,.11)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(G.x, G.y, R, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+
+      // cone
+      const grad = ctx.createRadialGradient(G.x, G.y, 4, G.x, G.y, R);
+      if (detected) {
+        grad.addColorStop(0, 'rgba(251,113,133,.32)');
+        grad.addColorStop(.55, 'rgba(251,113,133,.15)');
+        grad.addColorStop(1, 'rgba(251,113,133,0)');
+      } else {
+        grad.addColorStop(0, 'rgba(34,211,238,.20)');
+        grad.addColorStop(.55, 'rgba(34,211,238,.09)');
+        grad.addColorStop(1, 'rgba(34,211,238,0)');
+      }
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(G.x, G.y);
+      ctx.arc(G.x, G.y, R, ang - half, ang + half);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = detected ? 'rgba(251,113,133,.55)' : 'rgba(34,211,238,.4)';
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+      ctx.restore();
+
+      // line of sight
+      if (inRange) {
+        line(ctx, G.x, G.y, ip.x, ip.y, detected ? 'rgba(251,113,133,.55)' : 'rgba(148,163,184,.18)', 1, [4, 5]);
+      }
+
+      // angle arc
+      if (d < R * 1.3 && Math.abs(wrapAngle(bearing - ang)) < 1.4) {
+        const arcR = 38;
+        const ccw = wrapAngle(bearing - ang) < 0;
+        ctx.save();
+        ctx.strokeStyle = detected ? 'rgba(251,113,133,.7)' : 'rgba(163,230,53,.55)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(G.x, G.y, arcR, ang, bearing, ccw);
+        ctx.stroke();
+        ctx.restore();
+        const midA = ang + wrapAngle(bearing - ang) / 2;
+        drawText(ctx, 'Δθ', G.x + Math.cos(midA) * (arcR + 13), G.y + Math.sin(midA) * (arcR + 13), {
+          color: detected ? C.red : C.lime,
+          size: Math.max(7, fs - 1),
+          weight: 700,
+          align: 'center',
+          baseline: 'middle'
+        });
+      }
+
+      // guard
+      dot(ctx, G.x, G.y, 11, detected ? 'rgba(251,113,133,.18)' : 'rgba(34,211,238,.14)', 16);
+      ctx.save();
+      ctx.fillStyle = '#081018';
+      ctx.strokeStyle = detected ? C.red : 'rgba(34,211,238,.75)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(G.x, G.y, 10, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      ctx.translate(G.x, G.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = detected ? C.red : C.cyan;
+      ctx.beginPath();
+      ctx.moveTo(7, 0);
+      ctx.lineTo(2, 4);
+      ctx.lineTo(2, -4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      drawText(ctx, 'GUARD', G.x, G.y - 16, {
+        color: detected ? 'rgba(251,113,133,.8)' : 'rgba(34,211,238,.55)',
+        size: Math.max(7, fs - 2),
+        align: 'center',
+        weight: 700
+      });
+
+      if (detected) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(251,113,133,.35)';
+        ctx.lineWidth = 1.2;
+        const pr = (sc.t * 30) % 26;
+        ctx.beginPath();
+        ctx.arc(G.x, G.y, 16 + pr, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // intruder
+      const icol = detected ? C.red : C.lime;
+      dot(ctx, ip.x, ip.y, 8, rgba(icol, .18), 14);
+      ctx.save();
+      ctx.translate(ip.x, ip.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = icol;
+      ctx.strokeStyle = 'rgba(7,11,20,.8)';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.strokeRect(-5, -5, 10, 10);
+      ctx.restore();
+      drawText(ctx, 'INTRUDER', ip.x, ip.y + 19, {
+        color: rgba(icol, .75), size: Math.max(7, fs - 2), align: 'center', weight: 700
+      });
+
+      // status pill
+      const stW = detected ? 78 : 64;
+      const stX = s.x + s.w - stW - 10;
+      const stY = s.y + 26;
+      pill(ctx, stX, stY, stW, 20, detected ? 'rgba(251,113,133,.5)' : 'rgba(163,230,53,.35)', detected ? 'rgba(251,113,133,.12)' : 'rgba(163,230,53,.06)');
+      ctx.save();
+      ctx.fillStyle = detected ? C.red : C.lime;
+      ctx.shadowColor = detected ? C.red : C.lime;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(stX + 10, stY + 10, 3, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+      drawText(ctx, detected ? 'DETECTED' : 'HIDDEN', stX + 18, stY + 13.5, {
+        color: detected ? C.red : C.lime, size: Math.max(7, fs - 1), weight: 700
+      });
+
+      drawText(ctx, 'cos Δθ > cos 30°  AND  d < R', s.x + 12, s.y + s.h - 10, {
+        color: 'rgba(148,163,184,.5)', size: Math.max(7, fs - 2), weight: 600
+      });
+      ctx.restore();
+
+      // graph
+      const pr = plotRect(g, 32, 12, 30, 24);
+      const X = (t) => pr.x + clamp((t - (sc.t - WIN)) / WIN, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1 - v) / 2 * pr.h;
+      const thY = Y(Math.cos(half));
+
+      ctx.fillStyle = 'rgba(251,113,133,.05)';
+      ctx.fillRect(pr.x, pr.y, pr.w, thY - pr.y);
+
+      [-1, 0, 1].forEach((v) => {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, v === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, String(v), pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+      for (let k = 1; k < 4; k++) {
+        const xx = pr.x + k / 4 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+      }
+
+      line(ctx, pr.x, thY, pr.x + pr.w, thY, 'rgba(251,191,36,.5)', 1.2, [4, 4]);
+      drawText(ctx, 'cos 30°', pr.x + 4, thY + 11, {
+        color: 'rgba(251,191,36,.75)', size: Math.max(7, fs - 2), weight: 600
+      });
+
+      ctx.save();
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      for (let i = 1; i < sc.samples.length; i++) {
+        const a = sc.samples[i - 1];
+        const b = sc.samples[i];
+        ctx.strokeStyle = b.detected
+          ? 'rgba(251,113,133,.95)'
+          : (b.inRange ? 'rgba(163,230,53,.85)' : 'rgba(148,163,184,.3)');
+        ctx.beginPath();
+        ctx.moveTo(X(a.t), Y(a.v));
+        ctx.lineTo(X(b.t), Y(b.v));
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const lastS = sc.samples[sc.samples.length - 1];
+      if (lastS) dot(ctx, X(lastS.t), Y(lastS.v), 3.5, detected ? C.red : C.lime, 9);
+      drawText(ctx, cosv.toFixed(2), g.x + g.w - 12, g.y + 17.5, {
+        color: detected ? C.red : C.lime, size: Math.max(8, fs - 1), weight: 700, align: 'right'
+      });
+      drawText(ctx, 'SOLID = IN RANGE · LAST 8s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 06 — IK
+     ============================================================ */
+  builders.ik = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+    sc.samples = [];
+    sc.seeded = false;
+    enablePointer(sc);
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / TWO-BONE IK', C.magenta, fs);
+      panel(ctx, g, 'GRAPH / JOINT ANGLES', C.magenta, fs);
+
+      const S = { x: s.x + s.w * 0.28, y: s.y + s.h * 0.52 };
+      const L = Math.min(s.w * 0.25, s.h * 0.31);
+      const base = { x: s.x + s.w * 0.56, y: s.y + s.h * 0.52 };
+      const dmax = L * 2 - 3;
+
+      const autoAt = (tt) => ({
+        x: base.x + Math.sin(tt * 0.8) * Math.min(s.w * 0.06, L * 0.34),
+        y: base.y + Math.sin(tt * 1.17 + 0.9) * Math.min(s.h * 0.16, L * 0.5)
+      });
+
+      const solve = (tx, ty) => {
+        const dx = tx - S.x;
+        const dy = ty - S.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        const dc = clamp(d, 4, dmax);
+        const phi = Math.atan2(dy, dx);
+        const tx2 = S.x + Math.cos(phi) * dc;
+        const ty2 = S.y + Math.sin(phi) * dc;
+        const cosA = clamp((L * L + dc * dc - L * L) / (2 * L * dc), -1, 1);
+        const alpha = Math.acos(cosA);
+        const elbowA = phi - alpha;
+        const ex = S.x + Math.cos(elbowA) * L;
+        const ey = S.y + Math.sin(elbowA) * L;
+        const cosB = clamp((2 * L * L - dc * dc) / (2 * L * L), -1, 1);
+        const beta = Math.acos(cosB);
+        return { d, dc, phi, alpha, beta, elbowA, ex, ey, tx: tx2, ty: ty2 };
+      };
+
+      if (!sc.seeded) {
+        for (let tt = sc.t - WIN; tt <= sc.t; tt += 0.08) {
+          const p = autoAt(tt);
+          const r = solve(p.x, p.y);
+          sc.samples.push({ t: tt, a: r.alpha * 180 / Math.PI, b: r.beta * 180 / Math.PI });
+        }
+        sc.seeded = true;
+      }
+
+      const pointerOk = inRect(sc.pointer, s, 10);
+      const rawTarget = pointerOk
+        ? { x: clamp(sc.pointer.x, s.x + 8, s.x + s.w - 8), y: clamp(sc.pointer.y, s.y + 8, s.y + s.h - 8) }
+        : autoAt(sc.t);
+      const r = solve(rawTarget.x, rawTarget.y);
+      const reachable = r.d <= dmax;
+
+      if (dt > 0) {
+        sc.samples.push({ t: sc.t, a: r.alpha * 180 / Math.PI, b: r.beta * 180 / Math.PI });
+        while (sc.samples.length && sc.samples[0].t < sc.t - WIN) sc.samples.shift();
+      }
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // faint reach circle
+      ctx.save();
+      ctx.setLineDash([2, 8]);
+      ctx.strokeStyle = 'rgba(148,163,184,.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(S.x, S.y, dmax, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+
+      const T = { x: r.tx, y: r.ty };
+      if (!reachable) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(251,191,36,.4)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.arc(rawTarget.x, rawTarget.y, 10, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+        line(ctx, T.x, T.y, rawTarget.x, rawTarget.y, 'rgba(251,191,36,.2)', 1, [2, 4]);
+        drawText(ctx, 'OUT OF REACH', rawTarget.x, rawTarget.y - 16, {
+          color: 'rgba(251,191,36,.7)', size: Math.max(7, fs - 2), align: 'center', weight: 600
+        });
+      }
+
+      // dashed target line + triangle fill
+      line(ctx, S.x, S.y, T.x, T.y, 'rgba(231,238,248,.2)', 1, [4, 5]);
+      ctx.save();
+      ctx.fillStyle = 'rgba(34,211,238,.035)';
+      ctx.beginPath();
+      ctx.moveTo(S.x, S.y);
+      ctx.lineTo(r.ex, r.ey);
+      ctx.lineTo(T.x, T.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // torso
+      ctx.save();
+      ctx.fillStyle = '#0b1526';
+      ctx.strokeStyle = 'rgba(34,211,238,.24)';
+      ctx.lineWidth = 1.3;
+      rr(ctx, S.x - 44, S.y - 31, 40, 62, 9);
+      ctx.fill();
+      ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        line(ctx, S.x - 36, S.y - 12 + i * 12, S.x - 14, S.y - 12 + i * 12, 'rgba(34,211,238,.12)', 1.4);
+      }
+      ctx.restore();
+
+      // bones
+      const bone = (x1, y1, x2, y2) => {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#0e1a2b';
+        ctx.lineWidth = 16;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(34,211,238,.16)';
+        ctx.lineWidth = 11;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(34,211,238,.7)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = C.cyan;
+        ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.restore();
+      };
+      bone(S.x, S.y, r.ex, r.ey);
+      bone(r.ex, r.ey, T.x, T.y);
+
+      // joint discs
+      const joint = (x, y, rad) => {
+        ctx.save();
+        ctx.fillStyle = '#081018';
+        ctx.strokeStyle = 'rgba(34,211,238,.8)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, rad, 0, TAU); ctx.fill(); ctx.stroke();
+        dot(ctx, x, y, 2.6, C.cyan, 6);
+        ctx.restore();
+      };
+      joint(S.x, S.y, 10);
+      joint(r.ex, r.ey, 8);
+
+      // angle arcs
+      const shoulderDelta = wrapAngle(r.elbowA - r.phi);
+      const alphaArcR = Math.min(33, L * 0.44);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(34,211,238,.65)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(S.x, S.y, alphaArcR, r.phi, r.elbowA, shoulderDelta < 0);
+      ctx.stroke();
+      ctx.restore();
+      const midA = r.phi + shoulderDelta / 2;
+      const alphaLabelR = alphaArcR + Math.min(12, L * 0.16);
+      drawText(ctx, 'α', S.x + Math.cos(midA) * alphaLabelR, S.y + Math.sin(midA) * alphaLabelR, {
+        color: C.cyan, size: Math.max(8, fs), weight: 700, align: 'center', baseline: 'middle'
+      });
+
+      const a1 = Math.atan2(S.y - r.ey, S.x - r.ex);
+      const a2 = Math.atan2(T.y - r.ey, T.x - r.ex);
+      const elbowDelta = wrapAngle(a2 - a1);
+      const betaArcR = Math.min(19, L * 0.24);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(244,114,182,.7)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(r.ex, r.ey, betaArcR, a1, a2, elbowDelta < 0);
+      ctx.stroke();
+      ctx.restore();
+      const midB = a1 + elbowDelta / 2;
+      const betaLabelR = betaArcR + Math.min(12, L * 0.2);
+      drawText(ctx, 'β', r.ex + Math.cos(midB) * betaLabelR, r.ey + Math.sin(midB) * betaLabelR, {
+        color: C.magenta, size: Math.max(8, fs), weight: 700, align: 'center', baseline: 'middle'
+      });
+
+      drawText(ctx, 'L', (S.x + r.ex) / 2 + 9, (S.y + r.ey) / 2, {
+        color: 'rgba(34,211,238,.6)', size: Math.max(7, fs - 2), weight: 600
+      });
+      drawText(ctx, 'L', (r.ex + T.x) / 2 + 9, (r.ey + T.y) / 2, {
+        color: 'rgba(34,211,238,.6)', size: Math.max(7, fs - 2), weight: 600
+      });
+
+      // target reticle
+      ctx.save();
+      ctx.translate(T.x, T.y);
+      ctx.rotate(sc.t * 0.8);
+      ctx.strokeStyle = C.magenta;
+      ctx.lineWidth = 1.3;
+      ctx.setLineDash([4, 5]);
+      ctx.shadowColor = C.magenta;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      dot(ctx, T.x, T.y, 4, C.magenta, 12);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(244,114,182,.6)';
+      ctx.lineWidth = 1.2;
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(T.x + Math.cos(a) * 9, T.y + Math.sin(a) * 9);
+        ctx.lineTo(T.x + Math.cos(a) * 15, T.y + Math.sin(a) * 15);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // readout
+      const rw = 82, rh = 59;
+      const rxo = s.x + s.w - rw - 10;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, rw, rh, 'rgba(148,163,184,.14)');
+      const rows = [
+        ['α', (r.alpha * 180 / Math.PI).toFixed(0) + '°', C.cyan],
+        ['β', (r.beta * 180 / Math.PI).toFixed(0) + '°', C.magenta],
+        ['reach', Math.round(r.dc / dmax * 100) + '%', reachable ? C.lime : C.amber]
+      ];
+      rows.forEach((row, i) => {
+        const yy = ryo + 16 + i * 16;
+        drawText(ctx, row[0], rxo + 9, yy, { color: C.dim, size: fs - 2 });
+        drawText(ctx, row[1], rxo + rw - 9, yy, { color: row[2], size: fs - 1, weight: 600, align: 'right' });
+      });
+
+      drawText(ctx, pointerOk ? 'CURSOR TARGET' : 'MOVE CURSOR TO REACH', s.x + 12, s.y + s.h - 10, {
+        color: pointerOk ? 'rgba(163,230,53,.65)' : 'rgba(148,163,184,.5)',
+        size: Math.max(7, fs - 2), weight: 600
+      });
+      ctx.restore();
+
+      // graph
+      const pr = plotRect(g, 32, 12, 30, 24);
+      const X = (t) => pr.x + clamp((t - (sc.t - WIN)) / WIN, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1 - v / 180) * pr.h;
+
+      [0, 60, 120, 180].forEach((v) => {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, v === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, v + '°', pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+      for (let k = 1; k < 4; k++) {
+        const xx = pr.x + k / 4 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+      }
+
+      const curve = (key, color) => {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        for (let i = 0; i < sc.samples.length; i++) {
+          const smp = sc.samples[i];
+          const xx = X(smp.t);
+          const yy = Y(smp[key]);
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+      curve('a', C.cyan);
+      curve('b', C.magenta);
+
+      const lastS = sc.samples[sc.samples.length - 1];
+      if (lastS) {
+        dot(ctx, X(lastS.t), Y(lastS.a), 3.5, C.cyan, 9);
+        dot(ctx, X(lastS.t), Y(lastS.b), 3.5, C.magenta, 9);
+      }
+      drawText(ctx, 'α', g.x + g.w - 32, g.y + 17.5, { color: C.cyan, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      drawText(ctx, 'β', g.x + g.w - 10, g.y + 17.5, { color: C.magenta, size: Math.max(7, fs - 2), weight: 700, align: 'right' });
+      drawText(ctx, 'JOINT ANGLES · LAST 8s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 07 — SINE
+     ============================================================ */
+  builders.sine = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+    sc.amp = 0.6;
+    sc.freq = 1;
+
+    const ampEl = document.getElementById('sine-amp');
+    const freqEl = document.getElementById('sine-freq');
+    const ampVal = document.getElementById('sine-amp-val');
+    const freqVal = document.getElementById('sine-freq-val');
+
+    if (ampEl) ampEl.addEventListener('input', () => {
+      sc.amp = +ampEl.value / 100;
+      if (ampVal) ampVal.textContent = Math.round(sc.amp * 100) + '%';
+      redraw = true;
+    });
+    if (freqEl) freqEl.addEventListener('input', () => {
+      sc.freq = +freqEl.value / 100;
+      if (freqVal) freqVal.textContent = sc.freq.toFixed(1) + ' Hz';
+      redraw = true;
+    });
+
+    sc.draw = (sc) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / SINE MOTION', C.cyan, fs);
+      panel(ctx, g, 'GRAPH / AMPLITUDE', C.cyan, fs);
+
+      const waterY = s.y + s.h * 0.79;
+      const cx = s.x + s.w * 0.47;
+      const eqY = s.y + s.h * 0.39;
+      const A = sc.amp * s.h * 0.115;
+      const omega = TAU * sc.freq;
+      const y = eqY + Math.sin(omega * sc.t) * A;
+      const norm = Math.sin(omega * sc.t);
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // bubbles
+      for (let i = 0; i < 11; i++) {
+        const ph = ((sc.t * 0.055 + i * 0.091) % 1);
+        const bx = s.x + ((i * 67) % 100) / 100 * s.w;
+        const by = waterY - ph * (waterY - s.y - 24);
+        ctx.save();
+        ctx.globalAlpha = Math.sin(Math.PI * ph) * .22;
+        ctx.strokeStyle = C.cyan;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(bx, by, 1.4 + (i % 3), 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // water
+      const back = ctx.createLinearGradient(0, waterY - 10, 0, s.y + s.h);
+      back.addColorStop(0, 'rgba(34,211,238,.13)');
+      back.addColorStop(1, 'rgba(34,211,238,0)');
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y + s.h);
+      for (let x = s.x; x <= s.x + s.w; x += 5) {
+        const yy = waterY + Math.sin(x * 0.028 + sc.t * 1.2) * 3.5 + Math.sin(x * 0.061 - sc.t * 0.8) * 1.8;
+        ctx.lineTo(x, yy);
+      }
+      ctx.lineTo(s.x + s.w, s.y + s.h);
+      ctx.closePath();
+      ctx.fillStyle = back;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(34,211,238,.45)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (let x = s.x; x <= s.x + s.w; x += 5) {
+        const yy = waterY + Math.sin(x * 0.028 + sc.t * 1.2) * 3.5 + Math.sin(x * 0.061 - sc.t * 0.8) * 1.8;
+        if (x === s.x) ctx.moveTo(x, yy);
+        else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // amplitude guides
+      line(ctx, cx, eqY - A - 16, cx, eqY + A + 16, 'rgba(148,163,184,.24)', 1, [3, 4]);
+      [eqY - A, eqY, eqY + A].forEach((yy, i) => {
+        line(ctx, cx - 26, yy, cx + 26, yy, i === 1 ? 'rgba(148,163,184,.18)' : 'rgba(34,211,238,.25)', 1, i === 1 ? [2, 5] : [4, 4]);
+      });
+      drawText(ctx, '+A', cx + 31, eqY - A + 3, { color: 'rgba(34,211,238,.6)', size: Math.max(7, fs - 2), weight: 600 });
+      drawText(ctx, '−A', cx + 31, eqY + A + 3, { color: 'rgba(34,211,238,.6)', size: Math.max(7, fs - 2), weight: 600 });
+      drawText(ctx, 'EQ', cx + 31, eqY + 3, { color: 'rgba(148,163,184,.45)', size: Math.max(7, fs - 2), weight: 600 });
+
+      ctx.save();
+      ctx.setLineDash([2, 4]);
+      ctx.strokeStyle = 'rgba(148,163,184,.14)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, eqY - A, 21, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, eqY + A, 21, 0, TAU); ctx.stroke();
+      ctx.restore();
+
+      // shadow on water
+      const shadowA = clamp(1 - (waterY - y) / (s.h * .55), .08, .4);
+      ctx.save();
+      ctx.fillStyle = `rgba(34,211,238,${shadowA * .18})`;
+      ctx.beginPath();
+      ctx.ellipse(cx, waterY + 3, 28, 5, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      // tentacles
+      ctx.save();
+      ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) {
+        const sx0 = cx + i * 8;
+        ctx.beginPath();
+        ctx.moveTo(sx0, y + 2);
+        ctx.bezierCurveTo(
+          sx0 + Math.sin(sc.t * 1.3 + i) * 10, y + 16,
+          sx0 + Math.sin(sc.t * 1.3 + i + 0.9) * 14, y + 30,
+          sx0 + Math.sin(sc.t * 1.3 + i + 1.4) * 10, y + 45
+        );
+        ctx.strokeStyle = 'rgba(244,114,182,.38)';
+        ctx.lineWidth = 1.7;
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // jellyfish dome
+      ctx.save();
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 20;
+      const body = ctx.createLinearGradient(cx, y - 22, cx, y + 18);
+      body.addColorStop(0, 'rgba(34,211,238,.9)');
+      body.addColorStop(.65, 'rgba(96,165,250,.55)');
+      body.addColorStop(1, 'rgba(167,139,250,.28)');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.ellipse(cx, y, 27, 19, 0, Math.PI, TAU);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(231,238,248,.5)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(cx, y, 27, 19, 0, Math.PI, TAU);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(34,211,238,.25)';
+      ctx.beginPath();
+      ctx.ellipse(cx, y + 1, 27, 4, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      dot(ctx, cx, y + 1, 3, 'rgba(231,238,248,.75)', 8);
+      drawText(ctx, 'y(t)', cx - 36, y + 3, {
+        color: rgba(C.lime, .8), size: Math.max(7, fs - 1), align: 'right', baseline: 'middle', weight: 600
+      });
+      line(ctx, cx - 32, y, cx - 28, y, 'rgba(163,230,53,.55)', 1.2);
+
+      // readout
+      const rw = 88, rh = 59;
+      const rxo = s.x + s.w - rw - 10;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, rw, rh, 'rgba(148,163,184,.14)');
+      const rows = [
+        ['A', sc.amp.toFixed(2), C.cyan],
+        ['ω', omega.toFixed(2), C.magenta],
+        ['y', norm.toFixed(2), C.lime]
+      ];
+      rows.forEach((row, i) => {
+        const yy = ryo + 16 + i * 16;
+        drawText(ctx, row[0], rxo + 9, yy, { color: C.dim, size: fs - 2 });
+        drawText(ctx, row[1], rxo + rw - 9, yy, { color: row[2], size: fs - 1, weight: 600, align: 'right' });
+      });
+
+      drawText(ctx, 'AMPLITUDE AND FREQUENCY REBUILD THE WAVE', s.x + 12, s.y + s.h - 10, {
+        color: 'rgba(148,163,184,.5)', size: Math.max(7, fs - 2), weight: 600
+      });
+      ctx.restore();
+
+      // graph
+      const span = 6;
+      const pr = plotRect(g, 30, 12, 30, 24);
+      const X = (t) => pr.x + clamp((t - (sc.t - span)) / span, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1.12 - v) / 2.24 * pr.h;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(34,211,238,.045)';
+      ctx.fillRect(pr.x, Y(sc.amp), pr.w, Y(-sc.amp) - Y(sc.amp));
+      ctx.restore();
+
+      [-1, 0, 1].forEach((v) => {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy, v === 0 ? 'rgba(148,163,184,.22)' : 'rgba(148,163,184,.08)', 1);
+        drawText(ctx, String(v), pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+      });
+      line(ctx, pr.x, Y(sc.amp), pr.x + pr.w, Y(sc.amp), 'rgba(34,211,238,.28)', 1, [4, 4]);
+      line(ctx, pr.x, Y(-sc.amp), pr.x + pr.w, Y(-sc.amp), 'rgba(34,211,238,.28)', 1, [4, 4]);
+      drawText(ctx, '+A', pr.x + pr.w - 2, Y(sc.amp) - 5, {
+        color: 'rgba(34,211,238,.55)', size: Math.max(7, fs - 2), align: 'right'
+      });
+      drawText(ctx, '−A', pr.x + pr.w - 2, Y(-sc.amp) + 10, {
+        color: 'rgba(34,211,238,.55)', size: Math.max(7, fs - 2), align: 'right'
+      });
+      for (let k = 1; k < 4; k++) {
+        const xx = pr.x + k / 4 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+      }
+
+      ctx.save();
+      ctx.strokeStyle = C.cyan;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const tt = sc.t - span + span * i / 200;
+        const xx = X(tt);
+        const yy = Y(sc.amp * Math.sin(omega * tt));
+        if (i === 0) ctx.moveTo(xx, yy);
+        else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      line(ctx, pr.x + pr.w, pr.y, pr.x + pr.w, pr.y + pr.h, 'rgba(163,230,53,.35)', 1, [3, 4]);
+      dot(ctx, pr.x + pr.w, Y(norm * sc.amp), 4, C.lime, 10);
+      drawText(ctx, 'T = ' + (1 / sc.freq).toFixed(2) + 's', pr.x + pr.w, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.45)', size: Math.max(7, fs - 2), align: 'right'
+      });
+      drawText(ctx, 'LAST 6s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     SCENE 08 — HOMING
+     ============================================================ */
+  builders.homing = (canvas) => {
+    const sc = newScene(canvas);
+    sc.t = 8;
+    sc.missile = null;
+    sc.trail = [];
+    sc.samples = [];
+    sc.particles = [];
+    sc.respawn = 0;
+    sc.spawnIdx = 0;
+    sc.stars = null;
+    sc.seeded = false;
+    sc.lastW = 0;
+    sc.lastH = 0;
+    const MAX_TURN = 1.8;
+
+    const shipAt = (s, tt) => {
+      const ax = s.w * 0.24;
+      const ay = s.h * 0.27;
+      const x = s.x + s.w * 0.56 + ax * Math.sin(tt * 0.55);
+      const y = s.y + s.h * 0.46 + ay * Math.sin(tt * 0.87 + 1.0);
+      const dx = ax * 0.55 * Math.cos(tt * 0.55);
+      const dy = ay * 0.87 * Math.cos(tt * 0.87 + 1.0);
+      const len = Math.hypot(dx, dy) || 1;
+      const jink = 24 * Math.sin(tt * 4.2);
+      return { x: x - dy / len * jink, y: y + dx / len * jink };
+    };
+
+    const makeMissile = (s, ship, idx) => {
+      const spots = [
+        { x: .10, y: .87 }, { x: .88, y: .14 }, { x: .90, y: .85 }, { x: .12, y: .16 }
+      ];
+      const p = spots[idx % spots.length];
+      const x = s.x + s.w * p.x;
+      const y = s.y + s.h * p.y;
+      return {
+        x, y,
+        heading: Math.atan2(ship.y - y, ship.x - x),
+        speed: clamp(Math.min(s.w, s.h) * 0.72, 150, 200)
+      };
+    };
+
+    const burst = (x, y) => {
+      for (let i = 0; i < 26; i++) {
+        const a = Math.random() * TAU;
+        const sp = 30 + Math.random() * 170;
+        sc.particles.push({
+          x, y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          life: 0.4 + Math.random() * 0.7,
+          max: 1.1,
+          r: 1 + Math.random() * 2.4,
+          color: Math.random() < 0.5 ? C.amber : C.lime
+        });
+      }
+    };
+
+    const seedHistory = (s) => {
+      const dt = 1 / 60;
+      let tt = sc.t - WIN;
+      const first = shipAt(s, tt);
+      const temp = makeMissile(s, first, 0);
+      let lastPush = -1;
+      let idx = 1;
+      const trail = [];
+      while (tt < sc.t) {
+        const ship = shipAt(s, tt);
+        const bearing = Math.atan2(ship.y - temp.y, ship.x - temp.x);
+        const err = wrapAngle(bearing - temp.heading);
+        temp.heading = wrapAngle(temp.heading + clamp(err, -MAX_TURN * dt, MAX_TURN * dt));
+        temp.x += Math.cos(temp.heading) * temp.speed * dt;
+        temp.y += Math.sin(temp.heading) * temp.speed * dt;
+
+        if (tt - lastPush >= 0.055) {
+          sc.samples.push({ t: tt, v: err * 180 / Math.PI });
+          lastPush = tt;
+        }
+        trail.push({ x: temp.x, y: temp.y });
+        if (trail.length > 26) trail.shift();
+
+        const hitR = clamp(Math.min(s.w, s.h) * 0.04, 9, 16);
+        const out = temp.x < s.x - 60 || temp.x > s.x + s.w + 60 || temp.y < s.y - 60 || temp.y > s.y + s.h + 60;
+        if (Math.hypot(ship.x - temp.x, ship.y - temp.y) < hitR || out) {
+          const nm = makeMissile(s, ship, idx++);
+          temp.x = nm.x;
+          temp.y = nm.y;
+          temp.heading = nm.heading;
+          temp.speed = nm.speed;
+          trail.length = 0;
+          sc.spawnIdx = idx;
+        }
+        tt += dt;
+      }
+      sc.missile = { x: temp.x, y: temp.y, heading: temp.heading, speed: temp.speed };
+      sc.trail = trail;
+    };
+
+    const step = (s, dt) => {
+      const ship = shipAt(s, sc.t);
+      const m = sc.missile;
+      if (!m) return 0;
+      const bearing = Math.atan2(ship.y - m.y, ship.x - m.x);
+      const err = wrapAngle(bearing - m.heading);
+      m.heading = wrapAngle(m.heading + clamp(err, -MAX_TURN * dt, MAX_TURN * dt));
+      m.x += Math.cos(m.heading) * m.speed * dt;
+      m.y += Math.sin(m.heading) * m.speed * dt;
+
+      const hitR = clamp(Math.min(s.w, s.h) * 0.04, 9, 16);
+      if (Math.hypot(ship.x - m.x, ship.y - m.y) < hitR) {
+        burst(m.x, m.y);
+        sc.respawn = 0.85;
+      } else if (m.x < s.x - 60 || m.x > s.x + s.w + 60 || m.y < s.y - 60 || m.y > s.y + s.h + 60) {
+        sc.respawn = 0.35;
+      }
+      return err;
+    };
+
+    sc.draw = (sc, dt) => {
+      const { ctx, w, h } = sc;
+      ctx.clearRect(0, 0, w, h);
+      const fs = fsFor(sc);
+      const { scene: s, graph: g } = panes(w, h);
+      panel(ctx, s, 'SCENE / HOMING MISSILE', C.amber, fs);
+      panel(ctx, g, 'GRAPH / HEADING ERROR', C.amber, fs);
+
+      if (!sc.stars || Math.abs(sc.lastW - s.w) > 2 || Math.abs(sc.lastH - s.h) > 2) {
+        sc.lastW = s.w;
+        sc.lastH = s.h;
+        sc.stars = Array.from({ length: 74 }, () => ({
+          x: Math.random(),
+          y: Math.random(),
+          r: Math.random() * 1.2 + .35,
+          p: Math.random() * TAU
+        }));
+      }
+
+      if (!sc.seeded) {
+        seedHistory(s);
+        sc.seeded = true;
+      }
+
+      const ship = shipAt(s, sc.t);
+      const ship2 = shipAt(s, sc.t + 0.07);
+      const shipA = Math.atan2(ship2.y - ship.y, ship2.x - ship.x);
+
+      if (dt > 0) {
+        if (sc.respawn > 0) {
+          sc.respawn -= dt;
+          if (sc.respawn <= 0) {
+            sc.missile = makeMissile(s, ship, ++sc.spawnIdx);
+            sc.trail = [];
+          }
+        } else if (sc.missile) {
+          const e = step(s, dt);
+          sc.samples.push({ t: sc.t, v: e * 180 / Math.PI });
+          while (sc.samples.length && sc.samples[0].t < sc.t - WIN) sc.samples.shift();
+          sc.trail.push({ x: sc.missile.x, y: sc.missile.y });
+          if (sc.trail.length > 26) sc.trail.shift();
+        }
+        for (const p of sc.particles) {
+          p.life -= dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vx *= 0.975;
+          p.vy *= 0.975;
+        }
+        sc.particles = sc.particles.filter((p) => p.life > 0);
+      }
+
+      const m = sc.missile;
+      const bearing = m ? Math.atan2(ship.y - m.y, ship.x - m.x) : 0;
+      const err = m ? wrapAngle(bearing - m.heading) : 0;
+
+      ctx.save();
+      rr(ctx, s.x, s.y, s.w, s.h, 12);
+      ctx.clip();
+
+      // nebulae
+      const nebA = ctx.createRadialGradient(s.x + s.w * .24, s.y + s.h * .34, 0, s.x + s.w * .24, s.y + s.h * .34, Math.min(s.w, s.h) * .55);
+      nebA.addColorStop(0, 'rgba(34,211,238,.055)');
+      nebA.addColorStop(1, 'rgba(34,211,238,0)');
+      ctx.fillStyle = nebA;
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      const nebB = ctx.createRadialGradient(s.x + s.w * .78, s.y + s.h * .66, 0, s.x + s.w * .78, s.y + s.h * .66, Math.min(s.w, s.h) * .55);
+      nebB.addColorStop(0, 'rgba(244,114,182,.055)');
+      nebB.addColorStop(1, 'rgba(244,114,182,0)');
+      ctx.fillStyle = nebB;
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+
+      // starfield
+      for (const st of sc.stars) {
+        const tw = 0.15 + 0.35 * (0.5 + 0.5 * Math.sin(sc.t * 1.2 + st.p));
+        ctx.fillStyle = `rgba(200,235,255,${tw * .5})`;
+        ctx.beginPath();
+        ctx.arc(s.x + st.x * s.w, s.y + st.y * s.h, st.r, 0, TAU);
+        ctx.fill();
+      }
+
+      // target path hint
+      ctx.save();
+      ctx.setLineDash([2, 7]);
+      ctx.strokeStyle = 'rgba(244,114,182,.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const p = shipAt(s, sc.t - 2 + i / 80 * 4);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // ship
+      ctx.save();
+      ctx.translate(ship.x, ship.y);
+      ctx.rotate(shipA);
+      ctx.fillStyle = 'rgba(34,211,238,.3)';
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(-22, 6);
+      ctx.lineTo(-22, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = C.magenta;
+      ctx.shadowColor = C.magenta;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.moveTo(13, 0);
+      ctx.lineTo(-7, 8);
+      ctx.lineTo(-3.5, 0);
+      ctx.lineTo(-7, -8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(231,238,248,.55)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = 'rgba(244,114,182,.25)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.beginPath();
+      ctx.arc(ship.x, ship.y, 17, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      drawText(ctx, 'TARGET', ship.x, ship.y + 29, {
+        color: 'rgba(244,114,182,.6)', size: Math.max(7, fs - 2), align: 'center', weight: 700
+      });
+
+      if (sc.missile && sc.respawn <= 0) {
+        const trail = sc.trail;
+        for (let i = 1; i < trail.length; i++) {
+          const a = i / trail.length;
+          line(ctx, trail[i - 1].x, trail[i - 1].y, trail[i].x, trail[i].y, rgba(C.lime, a * .7), 2.4);
+        }
+
+        line(ctx, m.x, m.y, ship.x, ship.y, 'rgba(231,238,248,.16)', 1, [3, 6]);
+
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(m.heading);
+        ctx.fillStyle = 'rgba(163,230,53,.25)';
+        ctx.beginPath();
+        ctx.moveTo(-6, 0);
+        ctx.lineTo(-18, 5);
+        ctx.lineTo(-18, -5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = C.lime;
+        ctx.shadowColor = C.lime;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(11, 0);
+        ctx.lineTo(-7.5, 5.2);
+        ctx.lineTo(-3.5, 0);
+        ctx.lineTo(-7.5, -5.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f4ffe0';
+        ctx.beginPath();
+        ctx.arc(5, 0, 1.8, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+
+        const mdist = Math.hypot(ship.x - m.x, ship.y - m.y);
+        if (mdist > 48) {
+          drawText(ctx, 'MISSILE', m.x, m.y + 23, {
+            color: 'rgba(163,230,53,.7)', size: Math.max(7, fs - 2), align: 'center', weight: 700
+          });
+        }
+
+        if (Math.abs(err) > toRad(6)) {
+          const arcR = 20;
+          ctx.save();
+          ctx.strokeStyle = 'rgba(251,191,36,.65)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, arcR, m.heading, bearing, err < 0);
+          ctx.stroke();
+          ctx.restore();
+          const midA = m.heading + err / 2;
+          drawText(ctx, 'Δθ', m.x + Math.cos(midA) * (arcR + 12), m.y + Math.sin(midA) * (arcR + 12), {
+            color: C.amber, size: Math.max(7, fs - 2), weight: 700, align: 'center', baseline: 'middle'
+          });
+        }
+      }
+
+      for (const p of sc.particles) {
+        const a = Math.max(0, p.life / p.max);
+        dot(ctx, p.x, p.y, p.r, rgba(p.color, a * .8), 6);
+      }
+
+      if (sc.respawn > 0) {
+        drawText(ctx, 'IMPACT', ship.x, ship.y - 26, {
+          color: C.amber, size: Math.max(8, fs), weight: 800, align: 'center'
+        });
+      }
+
+      // readout
+      const active = !!m && sc.respawn <= 0;
+      const dist = m ? Math.hypot(ship.x - m.x, ship.y - m.y) : 0;
+      const rw = 88, rh = 59;
+      const rxo = s.x + s.w - rw - 10;
+      const ryo = s.y + 28;
+      pill(ctx, rxo, ryo, rw, rh, 'rgba(148,163,184,.14)');
+      const rows = [
+        ['range', active ? Math.round(dist) : '—', C.cyan],
+        ['Δθ', active ? Math.round(err * 180 / Math.PI) + '°' : '—', C.amber],
+        ['turn', MAX_TURN.toFixed(1), C.lime]
+      ];
+      rows.forEach((row, i) => {
+        const yy = ryo + 16 + i * 16;
+        drawText(ctx, row[0], rxo + 9, yy, { color: C.dim, size: fs - 2 });
+        drawText(ctx, String(row[1]), rxo + rw - 9, yy, { color: row[2], size: fs - 1, weight: 600, align: 'right' });
+      });
+
+      drawText(ctx, 'TURN = CLAMP(Δθ, ±TURN RATE · dt)', s.x + 12, s.y + s.h - 10, {
+        color: 'rgba(148,163,184,.5)', size: Math.max(7, fs - 2), weight: 600
+      });
+      ctx.restore();
+
+      // graph
+      const pr = plotRect(g, 34, 12, 30, 24);
+      const X = (t) => pr.x + clamp((t - (sc.t - WIN)) / WIN, 0, 1) * pr.w;
+      const Y = (v) => pr.y + (1 - (v + 180) / 360) * pr.h;
+
+      [-180, -90, 0, 90, 180].forEach((v) => {
+        const yy = Y(v);
+        line(ctx, pr.x, yy, pr.x + pr.w, yy,
+          v === 0 ? 'rgba(148,163,184,.28)' : (v % 180 === 0 ? 'rgba(148,163,184,.1)' : 'rgba(148,163,184,.05)'),
+          1, v === 0 ? null : [3, 5]);
+        if (v % 180 === 0) {
+          drawText(ctx, v + '°', pr.x - 6, yy + 3, { color: C.dim, size: Math.max(7, fs - 2), align: 'right' });
+        }
+      });
+      for (let k = 1; k < 4; k++) {
+        const xx = pr.x + k / 4 * pr.w;
+        line(ctx, xx, pr.y, xx, pr.y + pr.h, 'rgba(148,163,184,.05)', 1);
+      }
+
+      if (sc.samples.length) {
+        ctx.save();
+        ctx.strokeStyle = C.amber;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = C.amber;
+        ctx.shadowBlur = 7;
+        ctx.beginPath();
+        for (let i = 0; i < sc.samples.length; i++) {
+          const smp = sc.samples[i];
+          const xx = X(smp.t);
+          const yy = Y(smp.v);
+          if (i === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+        if (active) dot(ctx, X(sc.t), Y(err * 180 / Math.PI), 3.5, C.lime, 9);
+      } else {
+        drawText(ctx, 'ACQUIRING…', pr.x + pr.w / 2, pr.y + pr.h / 2, {
+          color: 'rgba(148,163,184,.4)', size: Math.max(8, fs - 1), align: 'center'
+        });
+      }
+
+      drawText(ctx, active ? Math.round(err * 180 / Math.PI) + '°' : '—', g.x + g.w - 12, g.y + 17.5, {
+        color: C.amber, size: Math.max(8, fs - 1), weight: 700, align: 'right'
+      });
+      drawText(ctx, 'SHORTEST-ANGLE ERROR · LAST 8s', pr.x, pr.y + pr.h + 14, {
+        color: 'rgba(148,163,184,.42)', size: Math.max(7, fs - 2)
+      });
+    };
+    return sc;
+  };
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const sc = e.target.__scene;
+      if (sc) sc.visible = e.isIntersecting;
+    }
+  }, { rootMargin: '140px' });
+
+  const ro = new ResizeObserver((entries) => {
+    for (const e of entries) {
+      const sc = e.target.__scene;
+      if (!sc) continue;
+      const oldW = sc.w, oldH = sc.h;
+      if (!fit(sc)) continue;
+      if (Math.abs(oldW - sc.w) > .5 || Math.abs(oldH - sc.h) > .5) {
+        if (sc.onResize) sc.onResize();
+        redraw = true;
+      }
+    }
+  });
+
+  function init() {
+    document.querySelectorAll('canvas[data-scene]').forEach((canvas) => {
+      const name = canvas.dataset.scene;
+      const build = builders[name];
+      if (!build) return;
+      const sc = build(canvas);
+      canvas.__scene = sc;
+      scenes.push(sc);
+      io.observe(canvas);
+      ro.observe(canvas);
+      fit(sc);
+    });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    paused = reduce;
+    const btn = document.getElementById('pause-btn');
+    const sync = () => {
+      btn.setAttribute('aria-pressed', String(paused));
+      btn.textContent = paused ? 'Play motion' : 'Pause motion';
+    };
+    sync();
+    btn.addEventListener('click', () => {
+      paused = !paused;
+      last = performance.now();
+      redraw = true;
+      sync();
+    });
+
+    const reveal = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          reveal.unobserve(e.target);
+        }
+      }
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach((el) => reveal.observe(el));
+
+    window.addEventListener('resize', () => {
+      for (const sc of scenes) {
+        if (fit(sc) && sc.onResize) sc.onResize();
+      }
+      redraw = true;
+    });
+
+    last = performance.now();
+    requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (!paused) {
+      for (const sc of scenes) {
+        if (!sc.visible) continue;
+        sc.t += dt;
+        sc.draw(sc, dt);
+      }
+      redraw = false;
+    } else if (redraw) {
+      for (const sc of scenes) {
+        if (sc.visible) sc.draw(sc, 0);
+      }
+      redraw = false;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
